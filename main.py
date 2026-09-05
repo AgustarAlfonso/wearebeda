@@ -122,7 +122,7 @@ def main():
     p_serve = subparsers.add_parser("serve", help="Start FastAPI development server")
     p_serve.add_argument("--host", type=str, default="127.0.0.1", help="Host address (default: 127.0.0.1)")
     p_serve.add_argument("--port", type=int, default=8000, help="Port number (default: 8000)")
-    p_serve.add_argument("--reload", action="store_true", default=False, help="Enable auto-reload")
+    p_serve.add_argument("--reload", action="store_true", default=True, help="Enable auto-reload (default: True)")
     p_serve.set_defaults(func=cmd_serve)
 
     args = parser.parse_args()
