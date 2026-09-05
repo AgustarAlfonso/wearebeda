@@ -13,11 +13,11 @@ The packaging, batch execution tooling, complete automated verification suite, a
 
 **Blocked by:** 06 — Interactive Jinja2 Review Dashboard & Consequential Action Dispatch Gate
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] CLI runner `python main.py process --all` ingests and processes all 12 cases in batch, printing structured progress summaries.
-- [ ] CLI runner `python main.py reset` resets SQLite database and re-seeds cleanly.
-- [ ] Test suite verifies primary HTTP and service orchestrator seam against all 12 cases using fast, deterministic fixtures.
-- [ ] Live smoke test suite (`pytest -m live_llm`) runs against live Anthropic API when `ANTHROPIC_API_KEY` is present.
-- [ ] `README.md` includes all deliverable items requested in `instruction.md`: setup instructions, architecture explanation, AI tools used, and known weaknesses/future improvements.
-- [ ] Repository is 100% packaged, clean, and ready for video recording and final evaluation.
+- [x] CLI runner `python main.py process --all` ingests and processes all 12 cases in batch, printing structured progress summaries.
+- [x] CLI runner `python main.py reset` resets SQLite database and re-seeds cleanly.
+- [x] Test suite verifies primary HTTP and service orchestrator seam against all 12 cases using fast, deterministic fixtures.
+- [x] Live smoke test suite (`pytest -m live_llm`) runs against live Anthropic API when `ANTHROPIC_API_KEY` is present.
+- [x] `README.md` includes all deliverable items requested in `instruction.md`: setup instructions, architecture explanation, AI tools used, and known weaknesses/future improvements.
+- [x] Repository is 100% packaged, clean, and ready for video recording and final evaluation.
