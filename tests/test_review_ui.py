@@ -132,3 +132,60 @@ def test_list_audit_logs_endpoint(seeded_db, monkeypatch):
     assert resp_filtered.status_code == 200
     filtered_data = resp_filtered.json()
     assert all(item["step"] == "classify" for item in filtered_data)
+
+
+def test_separated_classify_and_draft_endpoints(seeded_db, monkeypatch):
+    monkeypatch.setattr("app.main.DATABASE_PATH", seeded_db)
+    monkeypatch.setenv("GEMINI_API_KEY", "fake_key_for_testing")
+    client = TestClient(app)
+
+    # 1. Mock classify_enquiry
+    def mock_classify(enquiry_id, db_path, use_fixtures=False):
+        return {"category": "solar_battery_quote", "confidence": 0.95, "reasoning": "Mocked solar"}
+    monkeypatch.setattr("app.main.classify_enquiry", mock_classify)
+
+    # Test single classify endpoint
+    resp = client.post("/api/enquiries/E001/classify")
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "ok"
+    assert resp.json()["result"]["category"] == "solar_battery_quote"
+
+    # Test classify-all endpoint
+    resp_all = client.post("/api/classify-all")
+    assert resp_all.status_code == 200
+    assert resp_all.json()["status"] == "ok"
+    assert "classified_count" in resp_all.json()
+
+    # 2. Mock draft_response_for_enquiry
+    def mock_draft(enquiry_id, db_path, use_fixtures=False):
+        return "Hi, thank you for your enquiry. Here is our solar quote draft."
+    monkeypatch.setattr("app.main.draft_response_for_enquiry", mock_draft)
+
+    # Test single draft endpoint
+    resp_draft = client.post("/api/enquiries/E001/draft")
+    assert resp_draft.status_code == 200
+    assert resp_draft.json()["status"] == "ok"
+    assert "solar quote draft" in resp_draft.json()["draft"]
+
+    # Test draft-all endpoint
+    resp_draft_all = client.post("/api/draft-all")
+    assert resp_draft_all.status_code == 200
+    assert resp_draft_all.json()["status"] == "ok"
+    assert "drafted_count" in resp_draft_all.json()
+
+
+def test_separated_endpoints_require_api_key(seeded_db, monkeypatch):
+    monkeypatch.setattr("app.main.DATABASE_PATH", seeded_db)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    monkeypatch.setattr("dotenv.load_dotenv", lambda *args, **kwargs: None)
+    client = TestClient(app)
+
+    resp = client.post("/api/enquiries/E001/classify")
+    assert resp.status_code == 400
+    assert "GEMINI_API_KEY belum ditemukan" in resp.json()["detail"]
+
+    resp = client.post("/api/enquiries/E001/draft")
+    assert resp.status_code == 400
+    assert "GEMINI_API_KEY belum ditemukan" in resp.json()["detail"]
+

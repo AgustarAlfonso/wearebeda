@@ -744,8 +744,14 @@
         <div class="status-dot"></div>
         <span>Pipeline Ready</span>
       </div>
-      <button class="btn btn-primary" id="btnProcessAll" onclick="triggerProcessAll()">
-        ⚡ Process All Live
+      <button class="btn btn-primary" id="btnClassifyAll" onclick="triggerClassifyAll()" title="Step 1: Run AI Classification & Routing on pending enquiries">
+        🔍 1. Classify All
+      </button>
+      <button class="btn btn-success" id="btnDraftAll" onclick="triggerDraftAll()" title="Step 2: Generate Grounded Draft Replies for all classified enquiries">
+        ✍️ 2. Draft All Replies
+      </button>
+      <button class="btn btn-outline" id="btnProcessAll" onclick="triggerProcessAll()" title="Run end-to-end classification and drafting">
+        ⚡ All-in-One
       </button>
       <button class="btn btn-outline" style="border-color: rgba(244, 63, 94, 0.5); color: var(--accent-rose);" id="btnResetDB" onclick="triggerResetDatabase()" title="Reset database to initial raw ingested state">
         🔄 Reset System
@@ -859,18 +865,22 @@
               <span class="badge badge-{{ enq.status }}">{{ enq.status }}</span>
             </td>
             <td>
-              <div style="display: flex; gap: 6px;">
-                {% if enq.status == 'INGESTED' %}
-                  <button class="btn btn-primary" onclick="processSingleEnquiry('{{ enq.id }}')">
-                    ⚡ Process AI
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                {% if enq.status == 'INGESTED' or not enq.category %}
+                  <button class="btn btn-primary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="classifySingleEnquiry('{{ enq.id }}')" title="Jalankan AI klasifikasi dan routing untuk enquiry ini">
+                    🔍 Classify
+                  </button>
+                {% elif enq.status == 'CLASSIFIED' and enq.category != 'junk' %}
+                  <button class="btn btn-success" style="padding: 4px 10px; font-size: 0.8rem;" onclick="draftSingleEnquiry('{{ enq.id }}')" title="Susun draf balasan AI grounded untuk enquiry ini">
+                    ✍️ Draft Reply
                   </button>
                 {% endif %}
-                <button class="btn btn-outline" onclick="openReviewModal('{{ enq.id }}')">
+                <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.8rem;" onclick="openReviewModal('{{ enq.id }}')">
                   Inspect
                 </button>
                 {% if enq.status == 'PENDING_REVIEW' %}
-                  <button class="btn btn-success" onclick="quickApprove('{{ enq.id }}')">Approve</button>
-                  <button class="btn btn-danger" onclick="openRejectModal('{{ enq.id }}')">Reject</button>
+                  <button class="btn btn-success" style="padding: 4px 10px; font-size: 0.8rem;" onclick="quickApprove('{{ enq.id }}')">Approve</button>
+                  <button class="btn btn-danger" style="padding: 4px 10px; font-size: 0.8rem;" onclick="openRejectModal('{{ enq.id }}')">Reject</button>
                 {% endif %}
               </div>
             </td>
@@ -1069,7 +1079,12 @@
         <!-- Left Column: Context & Metadata -->
         <div class="modal-panel">
           <div>
-            <div class="panel-section-title">Case Information</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span class="panel-section-title" style="margin: 0;">Case Information</span>
+              <button class="btn btn-outline" style="padding: 3px 8px; font-size: 0.75rem;" onclick="reclassifyFromModal()" title="Jalankan ulang klasifikasi AI untuk case ini">
+                🔍 Re-Classify AI
+              </button>
+            </div>
             <div class="info-card">
               <div class="info-row">
                 <span class="info-label">Sender</span>
@@ -1114,7 +1129,12 @@
         <!-- Right Column: Grounded Draft Editor -->
         <div class="modal-panel">
           <div>
-            <div class="panel-section-title" id="draftSectionTitle">Grounded Response Draft (Claude Sonnet 5)</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span class="panel-section-title" id="draftSectionTitle" style="margin: 0;">Grounded Response Draft</span>
+              <button class="btn btn-outline" style="padding: 3px 8px; font-size: 0.75rem; color: var(--accent-emerald); border-color: rgba(16, 185, 129, 0.4);" onclick="redraftFromModal()" title="Susun ulang draf respon AI menggunakan fakta terverifikasi">
+                ✍️ Re-Generate Draft AI
+              </button>
+            </div>
             <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px;">
               Verify all quoted figures (kWh, bill amounts, PO numbers). You may edit the text prior to external dispatch.
             </p>
@@ -1384,12 +1404,104 @@
       }
     }
 
+    async function triggerClassifyAll() {
+      const btn = document.getElementById('btnClassifyAll');
+      const orig = btn ? btn.innerHTML : '🔍 1. Classify All';
+      if (btn) { btn.innerHTML = '⏳ Classifying...'; btn.disabled = true; }
+      showToast("Menjalankan AI Klasifikasi & Routing kaskade Gemini untuk semua enquiry...");
+
+      try {
+        const res = await fetch('/api/classify-all', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Gagal klasifikasi");
+        showToast(`Selesai! ${data.classified_count} enquiry berhasil diklasifikasi.`);
+        setTimeout(() => location.reload(), 1000);
+      } catch (err) {
+        showToast(err.message, true);
+        if (btn) { btn.innerHTML = orig; btn.disabled = false; }
+      }
+    }
+
+    async function triggerDraftAll() {
+      const btn = document.getElementById('btnDraftAll');
+      const orig = btn ? btn.innerHTML : '✍️ 2. Draft All Replies';
+      if (btn) { btn.innerHTML = '⏳ Drafting...'; btn.disabled = true; }
+      showToast("Menyusun draf balasan AI grounded untuk seluruh enquiry terklasifikasi...");
+
+      try {
+        const res = await fetch('/api/draft-all', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Gagal membuat draf");
+        showToast(`Selesai! ${data.drafted_count} draf balasan berhasil disusun dan siap ditinjau.`);
+        setTimeout(() => location.reload(), 1000);
+      } catch (err) {
+        showToast(err.message, true);
+        if (btn) { btn.innerHTML = orig; btn.disabled = false; }
+      }
+    }
+
+    async function classifySingleEnquiry(enquiryId) {
+      showToast(`Mengklasifikasi ${enquiryId} via Gemini...`);
+      try {
+        const res = await fetch(`/api/enquiries/${enquiryId}/classify`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Klasifikasi gagal");
+        showToast(`Enquiry ${enquiryId} berhasil diklasifikasi sebagai ${data.result.category}!`);
+        setTimeout(() => location.reload(), 1000);
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    async function draftSingleEnquiry(enquiryId) {
+      showToast(`Menyusun draf balasan AI grounded untuk ${enquiryId}...`);
+      try {
+        const res = await fetch(`/api/enquiries/${enquiryId}/draft`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Penyusunan draf gagal");
+        showToast(`Draf balasan untuk ${enquiryId} berhasil disusun dan masuk antrean review.`);
+        setTimeout(() => location.reload(), 1000);
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    async function reclassifyFromModal() {
+      if (!activeEnquiryId) return;
+      showToast(`Menjalankan ulang klasifikasi untuk ${activeEnquiryId}...`);
+      try {
+        const res = await fetch(`/api/enquiries/${activeEnquiryId}/classify`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Gagal klasifikasi ulang");
+        showToast(`Klasifikasi diperbarui: ${data.result.category}`);
+        openReviewModal(activeEnquiryId);
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    async function redraftFromModal() {
+      if (!activeEnquiryId) return;
+      showToast(`Menyusun ulang draf balasan untuk ${activeEnquiryId}...`);
+      try {
+        const res = await fetch(`/api/enquiries/${activeEnquiryId}/draft`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Gagal menyusun ulang draf");
+        document.getElementById('modalDraftText').value = data.draft;
+        showToast("Draf balasan baru berhasil digenerate!");
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
     async function triggerProcessAll() {
       const btn = document.getElementById('btnProcessAll');
-      const originalText = btn.innerHTML;
-      btn.innerHTML = '⏳ Processing with Gemini 3.8 Flash...';
-      btn.disabled = true;
-      showToast("Memanggil Gemini 3.8 Flash untuk memproses seluruh enquiry... Mohon tunggu sebentar.");
+      const originalText = btn ? btn.innerHTML : '⚡ All-in-One';
+      if (btn) {
+        btn.innerHTML = '⏳ Processing...';
+        btn.disabled = true;
+      }
+      showToast("Memanggil Gemini untuk memproses end-to-end seluruh enquiry... Mohon tunggu sebentar.");
 
       try {
         const res = await fetch('/api/process-all', { method: 'POST' });
@@ -1397,24 +1509,26 @@
         if (!res.ok) {
           throw new Error(data.detail || "Gagal memproses enquiry via AI");
         }
-        showToast(`Berhasil! ${data.processed} kasus telah diproses langsung oleh Gemini 3.8 Flash.`);
+        showToast(`Berhasil! ${data.processed} kasus telah diproses langsung oleh Gemini.`);
         setTimeout(() => location.reload(), 1200);
       } catch (err) {
         showToast(err.message, true);
-        btn.innerHTML = originalText;
-        btn.disabled = false;
+        if (btn) {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+        }
       }
     }
 
     async function processSingleEnquiry(enquiryId) {
-      showToast(`Memproses ${enquiryId} via Gemini 3.8 Flash API...`);
+      showToast(`Memproses ${enquiryId} via Gemini API...`);
       try {
         const res = await fetch(`/api/enquiries/${enquiryId}/process`, { method: 'POST' });
         const data = await res.json();
         if (!res.ok) {
           throw new Error(data.detail || "Gagal memproses enquiry");
         }
-        showToast(`Enquiry ${enquiryId} berhasil diproses langsung oleh Gemini 3.8 Flash!`);
+        showToast(`Enquiry ${enquiryId} berhasil diproses langsung oleh Gemini!`);
         setTimeout(() => location.reload(), 1000);
       } catch (err) {
         showToast(err.message, true);

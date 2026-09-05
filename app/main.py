@@ -11,6 +11,8 @@ from app.config import DATABASE_PATH, DATA_PATH, ANTHROPIC_API_KEY
 from app.database import get_db_connection, init_db, log_audit
 from app.seeder import seed_database_from_file
 from app.orchestrator import process_enquiry, process_all_enquiries
+from app.classifier import classify_enquiry
+from app.drafter import draft_response_for_enquiry
 from app.entity_resolver import (
     run_level_1_crm_resolution,
     resolve_enquiry_crm_matches,
@@ -372,6 +374,123 @@ def api_keep_separate(review_id: int, req: Optional[KeepSeparateRequest] = None)
 def api_resolve_all_entities():
     resolve_all_entities(db_path=DATABASE_PATH)
     return {"status": "ok", "message": "All entities resolved."}
+
+@app.post("/api/classify-all")
+def api_classify_all():
+    """Classifies all unclassified or all enquiries via Gemini Cascade."""
+    from dotenv import load_dotenv
+    from app.config import BASE_DIR
+    load_dotenv(BASE_DIR / ".env", override=True)
+    load_dotenv(BASE_DIR / "app" / ".env", override=True)
+    api_key = os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "")
+    if not api_key:
+        raise HTTPException(
+            status_code=400,
+            detail="GEMINI_API_KEY belum ditemukan di file .env! Silakan set GEMINI_API_KEY terlebih dahulu."
+        )
+    conn = get_db_connection(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM enquiries WHERE status = 'INGESTED' OR category IS NULL ORDER BY id ASC")
+    rows = cursor.fetchall()
+    if not rows:
+        cursor.execute("SELECT id FROM enquiries ORDER BY id ASC")
+        rows = cursor.fetchall()
+    conn.close()
+
+    results = []
+    for r in rows:
+        try:
+            res = classify_enquiry(r["id"], db_path=DATABASE_PATH, use_fixtures=False)
+            results.append({"id": r["id"], "result": res})
+        except Exception as e:
+            results.append({"id": r["id"], "error": str(e)})
+
+    resolve_all_entities(db_path=DATABASE_PATH)
+    return {"status": "ok", "classified_count": len(results), "results": results}
+
+@app.post("/api/draft-all")
+def api_draft_all():
+    """Generates grounded drafts for all classified enquiries via Gemini Cascade."""
+    from dotenv import load_dotenv
+    from app.config import BASE_DIR
+    load_dotenv(BASE_DIR / ".env", override=True)
+    load_dotenv(BASE_DIR / "app" / ".env", override=True)
+    api_key = os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "")
+    if not api_key:
+        raise HTTPException(
+            status_code=400,
+            detail="GEMINI_API_KEY belum ditemukan di file .env! Silakan set GEMINI_API_KEY terlebih dahulu."
+        )
+    conn = get_db_connection(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id FROM enquiries 
+        WHERE category IS NOT NULL 
+          AND category != 'junk' 
+          AND status != 'QUARANTINED' 
+          AND status != 'APPROVED_DISPATCHED'
+        ORDER BY id ASC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+
+    results = []
+    for r in rows:
+        try:
+            res = draft_response_for_enquiry(r["id"], db_path=DATABASE_PATH, use_fixtures=False)
+            results.append({"id": r["id"], "draft_length": len(res) if res else 0})
+        except Exception as e:
+            results.append({"id": r["id"], "error": str(e)})
+
+    return {"status": "ok", "drafted_count": len(results), "results": results}
+
+@app.post("/api/enquiries/{enquiry_id}/classify")
+def api_classify_single(enquiry_id: str):
+    """Classifies a single enquiry via Gemini Cascade."""
+    from dotenv import load_dotenv
+    from app.config import BASE_DIR
+    load_dotenv(BASE_DIR / ".env", override=True)
+    load_dotenv(BASE_DIR / "app" / ".env", override=True)
+    api_key = os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "")
+    if not api_key:
+        raise HTTPException(
+            status_code=400,
+            detail="GEMINI_API_KEY belum ditemukan di file .env! Silakan set GEMINI_API_KEY terlebih dahulu."
+        )
+    try:
+        res = classify_enquiry(enquiry_id, db_path=DATABASE_PATH, use_fixtures=False)
+        if "error" in res:
+            raise HTTPException(status_code=400, detail=res["error"])
+        resolve_enquiry_crm_matches(enquiry_id, db_path=DATABASE_PATH)
+        resolve_enquiry_enquiry_matches(enquiry_id, db_path=DATABASE_PATH)
+        return {"status": "ok", "result": res}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/enquiries/{enquiry_id}/draft")
+def api_draft_single(enquiry_id: str):
+    """Drafts grounded response for a single enquiry via Gemini Cascade."""
+    from dotenv import load_dotenv
+    from app.config import BASE_DIR
+    load_dotenv(BASE_DIR / ".env", override=True)
+    load_dotenv(BASE_DIR / "app" / ".env", override=True)
+    api_key = os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "")
+    if not api_key:
+        raise HTTPException(
+            status_code=400,
+            detail="GEMINI_API_KEY belum ditemukan di file .env! Silakan set GEMINI_API_KEY terlebih dahulu."
+        )
+    try:
+        draft = draft_response_for_enquiry(enquiry_id, db_path=DATABASE_PATH, use_fixtures=False)
+        if not draft:
+            raise HTTPException(status_code=400, detail=f"Draft tidak dapat disusun (enquiry {enquiry_id} berstatus junk/quarantined atau terjadi error).")
+        return {"status": "ok", "enquiry_id": enquiry_id, "draft": draft}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/process-all")
 def api_process_all():
