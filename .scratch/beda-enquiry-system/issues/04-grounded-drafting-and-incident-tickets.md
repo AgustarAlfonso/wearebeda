@@ -5,14 +5,14 @@ Grounded natural-language generation utilizing Claude Sonnet 5 (`claude-sonnet-5
 
 **Blocked by:** 03 — Schema-Enforced 5-Category Classification & Uncertainty-Preserving Staff Routing
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Response drafting pipeline calls Claude Sonnet 5 grounded strictly on CRM profile, enquiry body, and sanitized attachment facts.
-- [ ] Draft for E001 accurately references Hume Logistics site consumption (68,420 kWh) and bill total ($18,940).
-- [ ] Draft for E003 accurately references Greenfields Foods PO 8821 ($47,300), Invoice 1847 ($49,940), and the $2,640 discrepancy.
-- [ ] Draft for E005 poses targeted clarifying questions regarding the 1,100 fluorescent fittings and missing schedule.
-- [ ] Draft for E012 addresses Small Cafe's 70 sqm space and explicitly probes landlord consent.
-- [ ] E011 generates an Internal Incident Ticket for Ali Pratama citing the expired HubSpot OAuth token and the 146 records needing manual retry; outbound email drafting is suppressed.
-- [ ] Drafts are persisted in SQLite with state `PENDING_REVIEW`.
-- [ ] Audit log records drafting step, model used, and grounding context.
-- [ ] Automated tests verify drafting output across valid categories.
+- [x] Response drafting pipeline calls Claude Sonnet 5 grounded strictly on CRM profile, enquiry body, and sanitized attachment facts.
+- [x] Draft for E001 accurately references Hume Logistics site consumption (68,420 kWh) and bill total ($18,940).
+- [x] Draft for E003 accurately references Greenfields Foods PO 8821 ($47,300), Invoice 1847 ($49,940), and the $2,640 discrepancy.
+- [x] Draft for E005 poses targeted clarifying questions regarding the 1,100 fluorescent fittings and missing schedule.
+- [x] Draft for E012 addresses Small Cafe's 70 sqm space and explicitly probes landlord consent.
+- [x] E011 generates an Internal Incident Ticket for Ali Pratama citing the expired HubSpot OAuth token and the 146 records needing manual retry; outbound email drafting is suppressed.
+- [x] Drafts are persisted in SQLite with state `PENDING_REVIEW`.
+- [x] Audit log records drafting step, model used, and grounding context.
+- [x] Automated tests verify drafting output across valid categories.

@@ -182,3 +182,118 @@ FIXTURES_CLASSIFY: Dict[str, Dict[str, Any]] = {
         "reasoning": "Commercial solar inquiry lacking critical landlord permission for roof works; assigned to Matt Cooper."
     }
 }
+
+FIXTURES_DRAFT: Dict[str, str] = {
+    "E001": """Dear Amelia,
+
+Thank you for contacting BEDA regarding solar, battery storage, and lighting solutions across your Hume Logistics facilities in Truganina, Dandenong, and Epping.
+
+We have reviewed your attached Truganina electricity bill (NMI: 63051234567, July 2026 billing period). With your Truganina site consumption at 68,420 kWh ($18,940 total bill) and maximum demand at 172 kW, combined with your overall 2.1 GWh annual portfolio across Victoria, there is exceptional scope for a commercial solar and battery installation to significantly reduce your peak demand tariffs and energy expenditure.
+
+Our founder, Matt Cooper, would be delighted to schedule an initial discussion with you next week as requested. We will call you directly on 0400 111 020 to align on a suitable time.
+
+Warm regards,
+BEDA Commercial Energy Solutions""",
+
+    "E002": """Dear Amelia,
+
+Thank you for submitting your website enquiry regarding a commercial solar proposal for Hume Logistic's three distribution centres in Melbourne.
+
+With an annual consumption of approximately two gigawatt hours, your operations represent a prime candidate for high-yield commercial solar infrastructure. We will reach out to you directly on 0400 111 020 to coordinate our technical assessment.
+
+Kind regards,
+BEDA Commercial Energy Solutions""",
+
+    "E003": """Hi Rohan,
+
+Thank you for reaching out regarding the invoice reconciliation for the completed Geelong LED lighting upgrade project for Greenfields Foods.
+
+We have checked our records against Purchase Order GF PO 8821 (approved value $47,300 ex GST) and Invoice 1847 ($49,940 ex GST). We acknowledge the variance of $2,640 ex GST flagged by your accounts team.
+
+Our Operations team, led by Ties Rahardjo, is currently reviewing the invoice breakdown and project completion sign-off with our accounts department. We will provide you with the formal reconciliation well before Friday so your team can proceed with payment.
+
+Best regards,
+BEDA Operations & Project Support""",
+
+    "E005": """Dear Melissa,
+
+Thank you for contacting BEDA regarding a potential government-incentivised LED upgrade for Northbank College's main campus.
+
+Upgrading approximately 1,100 fluorescent fittings can deliver substantial electricity cost reductions and maintenance savings, particularly during your primary operating hours (7:00am to 6:00pm weekdays) and evening hall/gym operations.
+
+To model the exact energy savings and identify all available government incentive subsidies you can access, could you please provide us with:
+1. A recent 12-month electricity invoice (showing your tariff structure, NMI, and peak demand).
+2. A current fixture schedule or room-by-room count, if available.
+
+Once received, our commercial team will prepare a preliminary incentive assessment for Northbank College.
+
+Warm regards,
+BEDA Energy Efficiency Team""",
+
+    "E006": """Dear SolarRay Engineering Team,
+
+Thank you for your technical enquiry regarding the PCS specification and harmonic distortion compliance on the proposed 500 kW battery project.
+
+We have logged your request regarding acceptable Total Harmonic Distortion (THD) limits at the point of common coupling (PCC) and whether the current design mandates a supplementary harmonic study. Because this requires specialized power systems engineering review, this matter has been escalated for engineering assessment.
+
+We will provide a formal technical response shortly.
+
+Best regards,
+BEDA Technical Engineering Services""",
+
+    "E008": """Hi Daniel,
+
+Thank you for confirming your four-person crew availability for the Ballarat commercial solar project for the week beginning 14 September.
+
+We understand your requirement for confirmation by Tuesday. Our Operations Coordinator, Ties Rahardjo, together with Matt Cooper, are finalizing the site access schedule and commercial approvals. We will communicate the final go-ahead before the Tuesday deadline.
+
+Best regards,
+BEDA Operations & Logistics""",
+
+    "E009": """Hi Sam,
+
+Thank you for contacting BEDA. Refrigerated cold storage facilities such as your warehouse in Newcastle typically achieve high returns from commercial solar installations, especially with monthly bills in the range of $80,000.
+
+Solar generation matches peak daytime refrigeration loads effectively, reducing both kWh rates and network demand charges. Our commercial lead, Matt Cooper, will call you at 0411 999 120 to discuss your facility's profile and explore tailored cost-reduction opportunities.
+
+Kind regards,
+BEDA Commercial Solar Team""",
+
+    "E010": """Hi Sam,
+
+Thank you for the update. We have noted your corrected contact mobile number (0411 999 102) and updated your primary communication address to sam@harbourcoldstores.example.
+
+We will use these details for all future correspondence regarding the Newcastle cold store energy reduction proposal.
+
+Best regards,
+BEDA Commercial Solar Team""",
+
+    "E011": """INTERNAL INCIDENT TICKET - BEDA INFRASTRUCTURE
+Ticket Reference: INC-E011-CRM-SYNC
+Assigned Owner: Ali Pratama (Senior Business Analyst - CRM & Workflows)
+Severity: High (Operational Integration Failure)
+
+Summary:
+HubSpot CRM synchronization job failed overnight at 02:14 UTC due to an expired OAuth token.
+
+Impact Assessment:
+- 146 customer and enquiry records currently remain unsynchronised between HubSpot and internal systems.
+- Automatic retry has been permanently disabled after exceeding three consecutive failure attempts.
+
+Required Remediation Actions:
+1. Re-authenticate and refresh the HubSpot OAuth integration token in the integration credentials manager.
+2. Manually trigger a batch re-sync for the 146 unsynchronised records once token validity is verified.
+3. Validate synchronization integrity across recent CRM records.""",
+
+    "E012": """Hi there,
+
+Thank you for contacting BEDA regarding a solar installation for your cafe.
+
+For a 70 square metre leased space spending approximately $900 per month on electricity, solar can help control operating expenses. However, installing solar panels on a commercial property requires formal consent from your landlord for roof penetration, structural integrity, and electrical tie-ins.
+
+We recommend having an initial discussion with your landlord regarding roof access rights. Once you have preliminary permission, we would be pleased to evaluate your switchboard and roof layout to provide an accurate quotation.
+
+Kind regards,
+BEDA Commercial Solar Team"""
+}
+
