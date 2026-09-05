@@ -690,35 +690,353 @@
       border-radius: 0 0 var(--radius-lg) var(--radius-lg);
     }
 
-    /* Toast */
-    .toast {
+    /* Inline Spinner for Buttons */
+    .inline-spinner {
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spinRing 0.75s infinite linear;
+      vertical-align: -2px;
+      margin-right: 6px;
+    }
+
+    /* Top Sticky Neon Progress Bar */
+    .top-progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple), var(--accent-emerald));
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.8);
+      z-index: 99999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .top-progress-bar.active {
+      opacity: 1;
+      animation: indeterminateBar 2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes indeterminateBar {
+      0% { left: 0%; width: 0%; }
+      50% { left: 25%; width: 55%; }
+      100% { left: 100%; width: 0%; }
+    }
+
+    /* Futuristic AI Loading Overlay */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(5, 9, 18, 0.8);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      animation: fadeIn 0.2s ease-out;
+    }
+    .loading-overlay.active {
+      display: flex;
+    }
+    .loading-card {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.8), 0 0 35px rgba(56, 189, 248, 0.18);
+      border-radius: var(--radius-lg);
+      padding: 2.25rem 2rem 1.8rem 2rem;
+      max-width: 460px;
+      width: 90%;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      animation: modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .loading-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple), var(--accent-emerald), var(--accent-cyan));
+      background-size: 300% 100%;
+      animation: shimmerBorder 2.5s infinite linear;
+    }
+    @keyframes shimmerBorder {
+      0% { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
+    }
+    .loading-spinner-box {
+      position: relative;
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 1.25rem auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .loading-spinner-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 3px solid rgba(56, 189, 248, 0.15);
+      border-top-color: var(--accent-cyan);
+      border-right-color: var(--accent-purple);
+      animation: spinRing 1.2s infinite linear;
+    }
+    .loading-spinner-ring-inner {
+      position: absolute;
+      inset: 9px;
+      border-radius: 50%;
+      border: 2px dashed rgba(168, 85, 247, 0.3);
+      border-bottom-color: var(--accent-emerald);
+      animation: spinRingReverse 2s infinite linear;
+    }
+    @keyframes spinRing {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes spinRingReverse {
+      0% { transform: rotate(360deg); }
+      100% { transform: rotate(0deg); }
+    }
+    .loading-spinner-core {
+      font-size: 1.6rem;
+      animation: pulseGlow 1.8s infinite ease-in-out;
+      color: var(--accent-cyan);
+      line-height: 1;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { transform: scale(0.92); opacity: 0.8; filter: drop-shadow(0 0 4px var(--accent-cyan)); }
+      50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 12px var(--accent-cyan)); }
+    }
+    .loading-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.4rem;
+      letter-spacing: -0.01em;
+    }
+    .loading-desc {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+      margin-bottom: 1.4rem;
+    }
+    .loading-progress-box {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 0.8rem 1rem;
+      margin-bottom: 1.1rem;
+    }
+    .loading-bar-track {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 0.55rem;
+    }
+    .loading-bar-fill {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 40%;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+      border-radius: 999px;
+      animation: barIndeterminate 1.8s infinite ease-in-out;
+    }
+    @keyframes barIndeterminate {
+      0% { left: -40%; }
+      50% { left: 35%; width: 50%; }
+      100% { left: 100%; width: 40%; }
+    }
+    .loading-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+    .loading-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent-cyan);
+      max-width: 300px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .loading-status-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      animation: pulseDot 1s infinite;
+      flex-shrink: 0;
+    }
+    @keyframes pulseDot {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+    .loading-timer {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .loading-dynamic-tip {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      min-height: 2.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.25s ease;
+      line-height: 1.35;
+    }
+
+    /* Toast Notification Container */
+    .toast-container {
       position: fixed;
       bottom: 2rem;
       right: 2rem;
-      background: var(--bg-surface-elevated);
+      z-index: 10001;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 440px;
+      pointer-events: none;
+    }
+    .toast {
+      pointer-events: auto;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
       border: 1px solid var(--border-color);
       color: var(--text-main);
-      padding: 12px 20px;
+      padding: 14px 18px;
       border-radius: var(--radius-sm);
       box-shadow: var(--shadow-lg);
-      font-size: 0.9rem;
-      display: none;
-      align-items: center;
-      gap: 10px;
-      z-index: 200;
-      animation: fadeIn 0.2s;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
     }
-
-    .toast.success { border-color: var(--accent-emerald); }
-    .toast.error { border-color: var(--accent-rose); }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+    @keyframes toastSlideIn {
+      from { transform: translateX(40px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .toast.success {
+      border-color: rgba(16, 185, 129, 0.4);
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(15, 23, 42, 0.95));
+    }
+    .toast.error {
+      border-color: rgba(244, 63, 94, 0.5);
+      background: linear-gradient(135deg, rgba(244, 63, 94, 0.15), rgba(15, 23, 42, 0.95));
+      max-width: 460px;
+    }
+    .toast.info {
+      border-color: rgba(56, 189, 248, 0.4);
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(15, 23, 42, 0.95));
+    }
+    .toast-icon {
+      font-size: 1.15rem;
+      line-height: 1;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .toast-body {
+      flex-grow: 1;
+    }
+    .toast-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 2px;
+    }
+    .toast-message {
+      color: var(--text-muted);
+      font-size: 0.84rem;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .toast-close {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 1.2rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 4px;
+    }
+    .toast-close:hover {
+      color: var(--text-main);
+    }
+    .toast-progress {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 2px;
+      background: var(--accent-cyan);
+      width: 100%;
+      transform-origin: left;
+    }
+    .toast.success .toast-progress { background: var(--accent-emerald); }
+    .toast.error .toast-progress { background: var(--accent-rose); }
+    @keyframes toastProgress {
+      from { transform: scaleX(1); }
+      to { transform: scaleX(0); }
     }
   </style>
 </head>
 <body>
+
+  <!-- Top Global Progress Bar -->
+  <div class="top-progress-bar" id="topProgressBar"></div>
+
+  <!-- Global High-Tech AI Loading Overlay -->
+  <div class="loading-overlay" id="globalLoadingOverlay">
+    <div class="loading-card">
+      <div class="loading-spinner-box">
+        <div class="loading-spinner-ring"></div>
+        <div class="loading-spinner-ring-inner"></div>
+        <div class="loading-spinner-core">✦</div>
+      </div>
+      <div class="loading-title" id="loadingTitle">Sedang Memproses AI</div>
+      <div class="loading-desc" id="loadingDesc">Menghubungi Google Gemini untuk menganalisis data enquiry...</div>
+      
+      <div class="loading-progress-box">
+        <div class="loading-bar-track">
+          <div class="loading-bar-fill"></div>
+        </div>
+        <div class="loading-meta">
+          <span class="loading-status-badge" id="loadingStepInfo">Inisialisasi Gemini Cascade</span>
+          <span class="loading-timer" id="loadingTimer">00:00</span>
+        </div>
+      </div>
+
+      <div class="loading-dynamic-tip" id="loadingTipText">
+        💡 Gemini sedang memverifikasi fakta data pengirim & CRM...
+      </div>
+    </div>
+  </div>
+
 
   <!-- Top Header -->
   <header>
@@ -1228,20 +1546,130 @@
     </div>
   </div>
 
-  <!-- Notification Toast -->
-  <div class="toast" id="toast">Operation completed successfully.</div>
+  <!-- Notification Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
 
   <!-- Client-Side Scripts -->
   <script>
     let activeEnquiryId = null;
+    let loadingTimerInterval = null;
+    let loadingTipInterval = null;
+    let loadingStartTime = 0;
 
-    function showToast(message, isError = false) {
-      const t = document.getElementById('toast');
-      t.innerText = message;
-      t.className = isError ? 'toast error' : 'toast success';
-      t.style.display = 'flex';
-      setTimeout(() => { t.style.display = 'none'; }, 4000);
+    const LOADING_TIPS = [
+      "Gemini Flash sedang menganalisis isi pesan enquiry & data pengirim...",
+      "Memverifikasi data tagihan, kWh, dan nomor pelanggan terhadap CRM...",
+      "Mengevaluasi probabilitas kategori & aturan spesialis routing bisnis...",
+      "Menjaga audit trail lengkap untuk setiap inferensi AI...",
+      "Menyusun respons grounded yang akurat tanpa halusinasi fakta..."
+    ];
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
+
+    function showLoading(title, desc, initialStep = "Inisialisasi Gemini Cascade") {
+      const overlay = document.getElementById('globalLoadingOverlay');
+      const bar = document.getElementById('topProgressBar');
+      if (!overlay) return;
+
+      document.getElementById('loadingTitle').innerText = title || "Sedang Memproses AI...";
+      document.getElementById('loadingDesc').innerText = desc || "Mohon tunggu sejenak, proses ini sedang berjalan...";
+      
+      const stepElem = document.getElementById('loadingStepInfo');
+      if (stepElem) stepElem.innerText = initialStep;
+
+      const timerElem = document.getElementById('loadingTimer');
+      if (timerElem) timerElem.innerText = "00:00";
+
+      // Tips rotation
+      let tipIdx = 0;
+      const tipElem = document.getElementById('loadingTipText');
+      if (tipElem) {
+        tipElem.innerText = `💡 ${LOADING_TIPS[0]}`;
+        clearInterval(loadingTipInterval);
+        loadingTipInterval = setInterval(() => {
+          tipIdx = (tipIdx + 1) % LOADING_TIPS.length;
+          tipElem.style.opacity = '0';
+          setTimeout(() => {
+            tipElem.innerText = `💡 ${LOADING_TIPS[tipIdx]}`;
+            tipElem.style.opacity = '1';
+          }, 250);
+        }, 4000);
+      }
+
+      // Elapsed Timer
+      loadingStartTime = Date.now();
+      clearInterval(loadingTimerInterval);
+      loadingTimerInterval = setInterval(() => {
+        const elapsedSec = Math.floor((Date.now() - loadingStartTime) / 1000);
+        const mm = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+        const ss = String(elapsedSec % 60).padStart(2, '0');
+        const tElem = document.getElementById('loadingTimer');
+        if (tElem) tElem.innerText = `${mm}:${ss}`;
+      }, 500);
+
+      overlay.classList.add('active');
+      if (bar) bar.classList.add('active');
+    }
+
+    function updateLoadingStep(stepText) {
+      const stepElem = document.getElementById('loadingStepInfo');
+      if (stepElem) stepElem.innerText = stepText;
+    }
+
+    function hideLoading() {
+      const overlay = document.getElementById('globalLoadingOverlay');
+      const bar = document.getElementById('topProgressBar');
+      clearInterval(loadingTimerInterval);
+      clearInterval(loadingTipInterval);
+      if (overlay) overlay.classList.remove('active');
+      if (bar) bar.classList.remove('active');
+    }
+
+    function showToast(message, isError = false, title = null, duration = null) {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      const type = isError ? 'error' : 'success';
+      toast.className = `toast ${type}`;
+
+      const icon = isError ? '❌' : '✅';
+      const defaultTitle = isError ? 'Terjadi Kesalahan' : 'Berhasil';
+      const toastTitle = title || defaultTitle;
+      const autoDismissMs = duration !== null ? duration : (isError ? 9000 : 4500);
+
+      toast.innerHTML = `
+        <span class="toast-icon">${icon}</span>
+        <div class="toast-body">
+          <div class="toast-title">${escapeHtml(toastTitle)}</div>
+          <div class="toast-message">${escapeHtml(message)}</div>
+        </div>
+        <button class="toast-close" onclick="this.parentElement.remove()" title="Tutup">&times;</button>
+        ${autoDismissMs > 0 ? `<div class="toast-progress" style="animation: toastProgress ${autoDismissMs}ms linear forwards;"></div>` : ''}
+      `;
+
+      container.appendChild(toast);
+
+      if (autoDismissMs > 0) {
+        setTimeout(() => {
+          if (toast.parentElement) {
+            toast.style.transition = 'opacity 0.3s, transform 0.3s';
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(40px)';
+            setTimeout(() => toast.remove(), 300);
+          }
+        }, autoDismissMs);
+      }
+    }
+
 
     function filterTable(status) {
       document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
@@ -1316,15 +1744,20 @@
           body: JSON.stringify({ draft_response: draft })
         });
         if (!res.ok) throw new Error("Failed to save draft edits");
-        showToast("Draft updated successfully.");
+        showToast("Perubahan draf respon berhasil disimpan ke database.", false, "Draf Disimpan");
       } catch (err) {
-        showToast(err.message, true);
+        showToast(err.message, true, "Gagal Menyimpan");
       }
     }
 
     async function approveFromModal() {
       if (!activeEnquiryId) return;
       const draft = document.getElementById('modalDraftText').value;
+      showLoading(
+        `Mengirim & Mendispatch ${activeEnquiryId}`,
+        `Menyetujui draf respon final dan memvalidasi simulasi pengiriman outbound eksternal...`,
+        `Outbound Dispatch Gate`
+      );
       try {
         const res = await fetch(`/api/enquiries/${activeEnquiryId}/approve`, {
           method: 'POST',
@@ -1332,22 +1765,31 @@
           body: JSON.stringify({ draft_response: draft })
         });
         if (!res.ok) throw new Error("Approval failed");
-        showToast(`Enquiry ${activeEnquiryId} approved and simulated external dispatch sent!`);
+        hideLoading();
+        showToast(`Enquiry ${activeEnquiryId} berhasil di-approve dan pesan external dispatch terkirim!`, false, "Dispatched");
         closeReviewModal();
         setTimeout(() => location.reload(), 1000);
       } catch (err) {
-        showToast(err.message, true);
+        hideLoading();
+        showToast(err.message, true, "Gagal Approve");
       }
     }
 
     async function quickApprove(enquiryId) {
+      showLoading(
+        `Mendispatch Kasus ${enquiryId}`,
+        `Menyetujui draf respon dan mengeksekusi simulasi outbound dispatch...`,
+        `Quick Dispatch`
+      );
       try {
         const res = await fetch(`/api/enquiries/${enquiryId}/approve`, { method: 'POST' });
         if (!res.ok) throw new Error("Approval failed");
-        showToast(`Enquiry ${enquiryId} approved and dispatched.`);
+        hideLoading();
+        showToast(`Enquiry ${enquiryId} berhasil diapprove dan langsung didispatch.`, false, "Dispatched");
         setTimeout(() => location.reload(), 1000);
       } catch (err) {
-        showToast(err.message, true);
+        hideLoading();
+        showToast(err.message, true, "Gagal Approve");
       }
     }
 
@@ -1370,9 +1812,14 @@
       if (!activeEnquiryId) return;
       const feedback = document.getElementById('rejectFeedbackText').value.trim();
       if (!feedback) {
-        alert("Please provide rejection feedback.");
+        alert("Harap berikan alasan feedback penolakan.");
         return;
       }
+      showLoading(
+        `Menolak Enquiry ${activeEnquiryId}`,
+        `Mencatat umpan balik penolakan ke audit log dan membatalkan antrean outbound...`,
+        `Recording Rejection Feedback`
+      );
       try {
         const res = await fetch(`/api/enquiries/${activeEnquiryId}/reject`, {
           method: 'POST',
@@ -1380,15 +1827,22 @@
           body: JSON.stringify({ feedback: feedback })
         });
         if (!res.ok) throw new Error("Rejection failed");
-        showToast(`Enquiry ${activeEnquiryId} marked as REJECTED.`);
+        hideLoading();
+        showToast(`Enquiry ${activeEnquiryId} resmi berstatus REJECTED.`, false, "Kasus Ditolak");
         closeRejectModal();
         setTimeout(() => location.reload(), 1000);
       } catch (err) {
-        showToast(err.message, true);
+        hideLoading();
+        showToast(err.message, true, "Gagal Reject");
       }
     }
 
     async function resolveReview(reviewId, action) {
+      showLoading(
+        `Resolusi Duplikat #${reviewId}`,
+        `Memperbarui status review duplikasi dan entitas CRM...`,
+        `Entity Resolution Gate`
+      );
       try {
         let endpoint = `/api/reviews/${reviewId}/${action}`;
         const res = await fetch(endpoint, {
@@ -1397,27 +1851,40 @@
           body: JSON.stringify({})
         });
         if (!res.ok) throw new Error("Action failed");
-        showToast(`Duplicate review ${reviewId} successfully set to ${action.toUpperCase()}`);
+        hideLoading();
+        showToast(`Review duplikat #${reviewId} berhasil ditetapkan ke ${action.toUpperCase()}`, false, "Resolusi Berhasil");
         setTimeout(() => location.reload(), 1000);
       } catch (err) {
-        showToast(err.message, true);
+        hideLoading();
+        showToast(err.message, true, "Gagal Resolusi Duplikat");
       }
     }
 
     async function triggerClassifyAll() {
       const btn = document.getElementById('btnClassifyAll');
       const orig = btn ? btn.innerHTML : '🔍 1. Classify All';
-      if (btn) { btn.innerHTML = '⏳ Classifying...'; btn.disabled = true; }
-      showToast("Menjalankan AI Klasifikasi & Routing kaskade Gemini untuk semua enquiry...");
+      if (btn) { btn.innerHTML = '<span class="inline-spinner"></span> Classifying...'; btn.disabled = true; }
+
+      showLoading(
+        "Menjalankan AI Klasifikasi & Routing",
+        "Google Gemini sedang mengidentifikasi intent bisnis, probabilitas confidence, menetapkan assigned owner, serta menyelesaikan entitas CRM...",
+        "Tahap 1: Klasifikasi & Routing"
+      );
 
       try {
         const res = await fetch('/api/classify-all', { method: 'POST' });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Gagal klasifikasi");
-        showToast(`Selesai! ${data.classified_count} enquiry berhasil diklasifikasi.`);
-        setTimeout(() => location.reload(), 1000);
+
+        updateLoadingStep("Klasifikasi Selesai! Memperbarui antrean...");
+        document.getElementById('loadingTitle').innerText = "✅ Klasifikasi Berhasil!";
+        document.getElementById('loadingDesc').innerText = `${data.classified_count} enquiry berhasil diklasifikasi dan dirutekan ke PIC.`;
+
+        showToast(`${data.classified_count} enquiry berhasil diklasifikasi dan dirutekan ke PIC yang sesuai.`, false, "Klasifikasi Selesai");
+        setTimeout(() => location.reload(), 1200);
       } catch (err) {
-        showToast(err.message, true);
+        hideLoading();
+        showToast(err.message, true, "Gagal Klasifikasi");
         if (btn) { btn.innerHTML = orig; btn.disabled = false; }
       }
     }
@@ -1425,72 +1892,134 @@
     async function triggerDraftAll() {
       const btn = document.getElementById('btnDraftAll');
       const orig = btn ? btn.innerHTML : '✍️ 2. Draft All Replies';
-      if (btn) { btn.innerHTML = '⏳ Drafting...'; btn.disabled = true; }
-      showToast("Menyusun draf balasan AI grounded untuk seluruh enquiry terklasifikasi...");
+      if (btn) { btn.innerHTML = '<span class="inline-spinner"></span> Drafting...'; btn.disabled = true; }
+
+      showLoading(
+        "Menyusun Draf Balasan Grounded AI",
+        "Google Gemini sedang membaca data tagihan kWh, nomor PO, dan konteks CRM untuk menyusun draf balasan resmi tanpa halusinasi fakta...",
+        "Tahap 2: Penyusunan Respon Grounded"
+      );
 
       try {
         const res = await fetch('/api/draft-all', { method: 'POST' });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Gagal membuat draf");
-        showToast(`Selesai! ${data.drafted_count} draf balasan berhasil disusun dan siap ditinjau.`);
-        setTimeout(() => location.reload(), 1000);
+
+        updateLoadingStep("Draf Selesai! Menyiapkan antrean review...");
+        document.getElementById('loadingTitle').innerText = "✅ Draf Selesai Disusun!";
+        document.getElementById('loadingDesc').innerText = `${data.drafted_count} draf balasan siap ditinjau di Human Gate.`;
+
+        showToast(`${data.drafted_count} draf balasan berhasil disusun dan siap ditinjau di Human-in-the-loop Gate.`, false, "Drafting Selesai");
+        setTimeout(() => location.reload(), 1200);
       } catch (err) {
-        showToast(err.message, true);
+        hideLoading();
+        showToast(err.message, true, "Gagal Menyusun Draf");
         if (btn) { btn.innerHTML = orig; btn.disabled = false; }
       }
     }
 
     async function classifySingleEnquiry(enquiryId) {
-      showToast(`Mengklasifikasi ${enquiryId} via Gemini...`);
+      showLoading(
+        `Mengklasifikasi Enquiry ${enquiryId}`,
+        `Model Gemini sedang menganalisis isi pesan, mendeteksi kategori bisnis, dan menetapkan owner PIC untuk ${enquiryId}...`,
+        `Memproses Kasus ${enquiryId}`
+      );
+
       try {
         const res = await fetch(`/api/enquiries/${enquiryId}/classify`, { method: 'POST' });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Klasifikasi gagal");
-        showToast(`Enquiry ${enquiryId} berhasil diklasifikasi sebagai ${data.result.category}!`);
+
+        updateLoadingStep(`Kategori: ${data.result.category} (${Math.round((data.result.confidence || 0) * 100)}%)`);
+        document.getElementById('loadingTitle').innerText = "✅ Klasifikasi Berhasil!";
+        document.getElementById('loadingDesc').innerText = `Enquiry ${enquiryId} dirutekan sebagai ${data.result.category}.`;
+
+        showToast(`Enquiry ${enquiryId} berhasil diklasifikasi sebagai ${data.result.category}!`, false);
         setTimeout(() => location.reload(), 1000);
       } catch (err) {
-        showToast(err.message, true);
+        hideLoading();
+        showToast(err.message, true, `Gagal Klasifikasi ${enquiryId}`);
       }
     }
 
     async function draftSingleEnquiry(enquiryId) {
-      showToast(`Menyusun draf balasan AI grounded untuk ${enquiryId}...`);
+      showLoading(
+        `Menyusun Draf Respon ${enquiryId}`,
+        `Model Gemini sedang memverifikasi fakta CRM dan attachment kasus ${enquiryId} untuk menyusun respon grounded...`,
+        `Grounded Drafting ${enquiryId}`
+      );
+
       try {
         const res = await fetch(`/api/enquiries/${enquiryId}/draft`, { method: 'POST' });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Penyusunan draf gagal");
-        showToast(`Draf balasan untuk ${enquiryId} berhasil disusun dan masuk antrean review.`);
+
+        document.getElementById('loadingTitle').innerText = "✅ Draf Selesai Disusun!";
+        document.getElementById('loadingDesc').innerText = `Draf balasan untuk ${enquiryId} telah siap ditinjau.`;
+
+        showToast(`Draf balasan untuk ${enquiryId} berhasil disusun dan masuk antrean review.`, false);
         setTimeout(() => location.reload(), 1000);
       } catch (err) {
-        showToast(err.message, true);
+        hideLoading();
+        showToast(err.message, true, `Gagal Menyusun Draf ${enquiryId}`);
       }
     }
 
     async function reclassifyFromModal() {
       if (!activeEnquiryId) return;
-      showToast(`Menjalankan ulang klasifikasi untuk ${activeEnquiryId}...`);
+      showLoading(
+        `Klasifikasi Ulang ${activeEnquiryId}`,
+        `Meminta Gemini mengevaluasi ulang pesan dan konteks terkini untuk kasus ${activeEnquiryId}...`,
+        `Kasus ${activeEnquiryId}`
+      );
+
       try {
         const res = await fetch(`/api/enquiries/${activeEnquiryId}/classify`, { method: 'POST' });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Gagal klasifikasi ulang");
-        showToast(`Klasifikasi diperbarui: ${data.result.category}`);
+
+        hideLoading();
+        showToast(`Klasifikasi diperbarui: ${data.result.category} (${Math.round((data.result.confidence || 0) * 100)}%)`, false);
         openReviewModal(activeEnquiryId);
       } catch (err) {
-        showToast(err.message, true);
+        hideLoading();
+        showToast(err.message, true, "Gagal Klasifikasi Ulang");
       }
     }
 
     async function redraftFromModal() {
       if (!activeEnquiryId) return;
-      showToast(`Menyusun ulang draf balasan untuk ${activeEnquiryId}...`);
+      const draftArea = document.getElementById('modalDraftText');
+      const prevVal = draftArea ? draftArea.value : '';
+      if (draftArea) {
+        draftArea.value = "⏳ Menyusun draf balasan baru via Gemini AI berbasis fakta terverifikasi... Mohon tunggu...";
+        draftArea.disabled = true;
+      }
+
+      showLoading(
+        `Menyusun Ulang Draf ${activeEnquiryId}`,
+        `Gemini sedang mengekstrak fakta dan menyusun format respon yang dipersonalisasi untuk ${activeEnquiryId}...`,
+        `Penyusunan Respon ${activeEnquiryId}`
+      );
+
       try {
         const res = await fetch(`/api/enquiries/${activeEnquiryId}/draft`, { method: 'POST' });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Gagal menyusun ulang draf");
-        document.getElementById('modalDraftText').value = data.draft;
-        showToast("Draf balasan baru berhasil digenerate!");
+
+        hideLoading();
+        if (draftArea) {
+          draftArea.disabled = false;
+          draftArea.value = data.draft;
+        }
+        showToast("Draf balasan baru berhasil digenerate!", false, "Draf Diperbarui");
       } catch (err) {
-        showToast(err.message, true);
+        hideLoading();
+        if (draftArea) {
+          draftArea.disabled = false;
+          draftArea.value = prevVal;
+        }
+        showToast(err.message, true, "Gagal Regenerate Draf");
       }
     }
 
@@ -1498,10 +2027,15 @@
       const btn = document.getElementById('btnProcessAll');
       const originalText = btn ? btn.innerHTML : '⚡ All-in-One';
       if (btn) {
-        btn.innerHTML = '⏳ Processing...';
+        btn.innerHTML = '<span class="inline-spinner"></span> Processing...';
         btn.disabled = true;
       }
-      showToast("Memanggil Gemini untuk memproses end-to-end seluruh enquiry... Mohon tunggu sebentar.");
+
+      showLoading(
+        "Memproses End-to-End dengan Gemini",
+        "Menjalankan sanitasi data, inferensi kaskade Gemini untuk klasifikasi & routing, resolusi entitas 3-level, serta penyusunan draf grounded...",
+        "Tahap: End-to-End Pipeline AI"
+      );
 
       try {
         const res = await fetch('/api/process-all', { method: 'POST' });
@@ -1509,10 +2043,16 @@
         if (!res.ok) {
           throw new Error(data.detail || "Gagal memproses enquiry via AI");
         }
-        showToast(`Berhasil! ${data.processed} kasus telah diproses langsung oleh Gemini.`);
+
+        updateLoadingStep("Pipeline Selesai! Memperbarui tampilan...");
+        document.getElementById('loadingTitle').innerText = "✅ Pipeline Selesai!";
+        document.getElementById('loadingDesc').innerText = `${data.processed} kasus telah diproses langsung oleh Gemini.`;
+
+        showToast(`Berhasil! ${data.processed} kasus telah diproses langsung oleh Gemini.`, false, "Pipeline Selesai");
         setTimeout(() => location.reload(), 1200);
       } catch (err) {
-        showToast(err.message, true);
+        hideLoading();
+        showToast(err.message, true, "Pipeline Error");
         if (btn) {
           btn.innerHTML = originalText;
           btn.disabled = false;
@@ -1521,17 +2061,23 @@
     }
 
     async function processSingleEnquiry(enquiryId) {
-      showToast(`Memproses ${enquiryId} via Gemini API...`);
+      showLoading(
+        `Memproses Kasus ${enquiryId}`,
+        `Menjalankan pipeline klasifikasi dan penyusunan draf balasan untuk enquiry ${enquiryId}...`,
+        `Kasus ${enquiryId}`
+      );
+
       try {
         const res = await fetch(`/api/enquiries/${enquiryId}/process`, { method: 'POST' });
         const data = await res.json();
         if (!res.ok) {
           throw new Error(data.detail || "Gagal memproses enquiry");
         }
-        showToast(`Enquiry ${enquiryId} berhasil diproses langsung oleh Gemini!`);
+        showToast(`Enquiry ${enquiryId} berhasil diproses langsung oleh Gemini!`, false);
         setTimeout(() => location.reload(), 1000);
       } catch (err) {
-        showToast(err.message, true);
+        hideLoading();
+        showToast(err.message, true, `Gagal Memproses ${enquiryId}`);
       }
     }
 
@@ -1542,10 +2088,15 @@
       const btn = document.getElementById('btnResetDB');
       const originalText = btn ? btn.innerHTML : '🔄 Reset System';
       if (btn) {
-        btn.innerHTML = '⏳ Resetting...';
+        btn.innerHTML = '<span class="inline-spinner"></span> Resetting...';
         btn.disabled = true;
       }
-      showToast("Me-reset database dan men-seed ulang data mentah dari data/data.md...");
+
+      showLoading(
+        "Me-Reset Database Sistem",
+        "Mengosongkan seluruh tabel database, menghapus draf dan audit logs, lalu melakukan seeding ulang data mentah dari data/data.md...",
+        "Tahap: Reset & Seed Database"
+      );
 
       try {
         const res = await fetch('/api/reset', { method: 'POST' });
@@ -1553,16 +2104,22 @@
         if (!res.ok) {
           throw new Error(data.detail || "Gagal me-reset database");
         }
-        showToast("Database berhasil di-reset ke status awal INGESTED.");
+
+        document.getElementById('loadingTitle').innerText = "✅ Database Berhasil Direset!";
+        document.getElementById('loadingDesc').innerText = "Database telah dikembalikan ke status awal INGESTED.";
+
+        showToast("Database berhasil di-reset ke status awal INGESTED.", false, "Reset Selesai");
         setTimeout(() => location.reload(), 1000);
       } catch (err) {
-        showToast(err.message, true);
+        hideLoading();
+        showToast(err.message, true, "Gagal Reset");
         if (btn) {
           btn.innerHTML = originalText;
           btn.disabled = false;
         }
       }
     }
+
 
     // View Switching Logic (Enquiries vs Audit Logs)
     let currentView = 'enquiries';
@@ -1677,7 +2234,9 @@
     }
 
     async function fetchLogsLive() {
-      showToast("Mengambil audit logs terbaru...");
+      const bar = document.getElementById('topProgressBar');
+      if (bar) bar.classList.add('active');
+      showToast("Mengambil audit logs terbaru dari server...", false, "Sinkronisasi Logs", 2000);
       try {
         const res = await fetch('/api/audit-logs?limit=200');
         if (!res.ok) throw new Error("Gagal mengambil log");
@@ -1737,9 +2296,11 @@
         if (reviewElem) reviewElem.innerText = reviewCount;
 
         filterLogs();
-        showToast("Audit logs berhasil dimuat ulang secara live.");
+        if (bar) bar.classList.remove('active');
+        showToast("Audit logs berhasil dimuat ulang secara live.", false, "Logs Terupdate", 3000);
       } catch (err) {
-        showToast(err.message, true);
+        if (bar) bar.classList.remove('active');
+        showToast(err.message, true, "Gagal Memuat Logs");
       }
     }
   </script>
