@@ -14,11 +14,11 @@ DATABASE_PATH = os.getenv("DATABASE_PATH", str(BASE_DIR / "beda_system.db"))
 # Gemini API Configuration with Multi-Model Fallback Cascade
 # If the primary model hits rate limit or quota, system cascades to next available model.
 DEFAULT_GEMINI_FALLBACKS = [
-    "gemini-3.8-flash",       # Primary: model teranyar Gemini 3.8 Flash
-    "gemini-2.5-flash",       # Fallback 1: High rate limit & quota stabil
-    "gemini-3.5-flash",       # Fallback 2: General purpose Flash
-    "gemini-2.5-flash-lite",  # Fallback 3: Sangat hemat kuota & cepat
-    "gemini-2.5-pro",         # Fallback 4: High intelligence reasoning tier
+    "gemini-3.6-flash",       # Primary workhorse (suksesor resmi 2.5-flash, kuota aktif & cepat)
+    "gemini-3.7-flash",       # Fallback 1: High intelligence flash model
+    "gemini-3.5-flash-lite",  # Fallback 2: Suksesor resmi 2.5-flash-lite (hemat kuota)
+    "gemini-3.1-flash-lite",  # Fallback 3: Ultra-low latency & kuota cadangan
+    "gemini-3.8-flash",       # Fallback 4: Flagship reasoning model (jika kuota harian tersedia)
 ]
 
 raw_models = os.getenv("GEMINI_MODELS", "")
