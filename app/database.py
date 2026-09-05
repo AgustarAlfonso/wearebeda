@@ -6,8 +6,13 @@ from app.config import DATABASE_PATH
 
 def get_db_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
     path = db_path or DATABASE_PATH
-    conn = sqlite3.connect(path)
+    conn = sqlite3.connect(path, timeout=30.0)
     conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA journal_mode = WAL;")
+        conn.execute("PRAGMA busy_timeout = 30000;")
+    except Exception:
+        pass
     return conn
 
 def init_db(db_path: Optional[str] = None):

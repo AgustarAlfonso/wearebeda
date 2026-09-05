@@ -196,6 +196,7 @@ def seed_database_from_file(filepath: str, db_path: Optional[str] = None):
             comp2_prefix = r2["company"].lower()[:10]
 
             if c1_norm == c2_norm and (comp1_prefix in r2["company"].lower() or comp2_prefix in r1["company"].lower()):
+                desc = f"Pre-existing CRM duplicate pair in seed data: {r1['id']} ({r1['company']}) and {r2['id']} ({r2['company']}) share contact '{r1['contact']}' with matching company prefix"
                 cursor.execute("""
                     INSERT INTO duplicate_reviews (match_level, source_id, target_id, description, status, created_at, updated_at)
                     VALUES (?, ?, ?, ?, 'PENDING', ?, ?)
@@ -203,10 +204,20 @@ def seed_database_from_file(filepath: str, db_path: Optional[str] = None):
                     "LEVEL_1_CRM",
                     r1["id"],
                     r2["id"],
-                    f"Pre-existing CRM duplicate pair in seed data: {r1['id']} ({r1['company']}) and {r2['id']} ({r2['company']}) share contact '{r1['contact']}' with matching company prefix",
+                    desc,
                     now_ts,
                     now_ts
                 ))
+                log_audit(
+                    input_id=f"{r1['id']}:{r2['id']}",
+                    step="entity_resolution_level_1",
+                    output={"source_id": r1["id"], "target_id": r2["id"], "match_level": "LEVEL_1_CRM"},
+                    reasoning=f"Level 1 CRM duplicate identified: {r1['id']} and {r2['id']} share contact '{r1['contact']}'. Queued for human review.",
+                    status="needs_review",
+                    model_used="n/a",
+                    db_path=db_path,
+                    conn=conn
+                )
 
     # 4. Seed Enquiries (E001 - E012)
     for enq in data["enquiries"]:

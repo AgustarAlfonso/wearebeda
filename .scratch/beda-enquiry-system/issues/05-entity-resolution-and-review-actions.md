@@ -9,13 +9,13 @@ Provides the 3 standard human review operations: `Merge as Duplicate`, `Update C
 
 **Blocked by:** 04 — Grounded Customer Response Drafting & Internal Incident Ticket Generation
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Level 1 matcher identifies C001 and C002 duplicate pair and creates an actionable review queue item.
-- [ ] Level 2 matcher links E001 to C001 and E002 to C002.
-- [ ] Level 2 matcher flags phone number mentioned in E002 as an unverified claim, queuing an "Update CRM Field" suggestion.
-- [ ] Level 3 matcher links E010 to E009 based on Harbour Cold Stores company match and email domain.
-- [ ] Level 3 matcher surfaces phone and email correction from E010 as an actionable update.
-- [ ] API endpoints support the 3 human operations: `Merge as Duplicate`, `Update CRM Field`, and `Keep Separate`.
-- [ ] Audit log records all entity resolution detections and subsequent human decisions.
-- [ ] Automated tests verify all 3 matching levels and human operation contracts.
+- [x] Level 1 matcher identifies C001 and C002 duplicate pair and creates an actionable review queue item.
+- [x] Level 2 matcher links E001 to C001 and E002 to C002.
+- [x] Level 2 matcher flags phone number mentioned in E002 as an unverified claim, queuing an "Update CRM Field" suggestion.
+- [x] Level 3 matcher links E010 to E009 based on Harbour Cold Stores company match and email domain.
+- [x] Level 3 matcher surfaces phone and email correction from E010 as an actionable update.
+- [x] API endpoints support the 3 human operations: `Merge as Duplicate`, `Update CRM Field`, and `Keep Separate`.
+- [x] Audit log records all entity resolution detections and subsequent human decisions.
+- [x] Automated tests verify all 3 matching levels and human operation contracts.
