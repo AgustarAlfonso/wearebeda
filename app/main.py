@@ -86,7 +86,20 @@ def get_dashboard(request: Request):
         enquiries.append(e_dict)
 
     cursor.execute("SELECT * FROM duplicate_reviews ORDER BY id ASC")
-    dups = [dict(r) for r in cursor.fetchall()]
+    raw_dups = cursor.fetchall()
+    dups = []
+    for r in raw_dups:
+        d = dict(r)
+        d["parsed_claim"] = None
+        if d.get("unverified_claim"):
+            try:
+                parsed = json.loads(d["unverified_claim"]) if isinstance(d["unverified_claim"], str) else d["unverified_claim"]
+                if isinstance(parsed, dict):
+                    d["parsed_claim"] = parsed
+            except Exception:
+                pass
+        dups.append(d)
+
 
     cursor.execute("SELECT * FROM audit_logs ORDER BY id DESC")
     raw_logs = cursor.fetchall()

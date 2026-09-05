@@ -1050,7 +1050,10 @@
     <!-- Navigation View Tabs -->
     <nav class="nav-tabs">
       <button class="nav-tab active" id="navTabEnquiries" onclick="switchView('enquiries')">
-        📋 Enquiries & Reviews
+        📥 Kotak Masuk Kasus <span class="nav-badge">{{ enquiries|length }}</span>
+      </button>
+      <button class="nav-tab" id="navTabDuplicates" onclick="switchView('duplicates')">
+        👥 Deteksi Duplikat & Kontak <span class="nav-badge" style="{% if pending_dups_count > 0 %}background: rgba(245, 158, 11, 0.25); color: var(--accent-amber); border: 1px solid rgba(245, 158, 11, 0.5);{% endif %}">{{ duplicate_reviews|length }}</span>
       </button>
       <button class="nav-tab" id="navTabLogs" onclick="switchView('logs')">
         📜 Audit Logs <span class="nav-badge" id="logsCountBadge">{{ audit_logs|length }}</span>
@@ -1060,21 +1063,23 @@
     <div class="header-actions">
       <div class="status-indicator">
         <div class="status-dot"></div>
-        <span>Pipeline Ready</span>
+        <span>Sistem Siap</span>
       </div>
-      <button class="btn btn-primary" id="btnClassifyAll" onclick="triggerClassifyAll()" title="Step 1: Run AI Classification & Routing on pending enquiries">
-        🔍 1. Classify All
+      <button class="btn btn-primary" id="btnClassifyAll" onclick="triggerClassifyAll()" title="Langkah 1: Analisis kategori & rute penerima untuk semua kasus">
+        🔍 1. Klasifikasi AI
       </button>
-      <button class="btn btn-success" id="btnDraftAll" onclick="triggerDraftAll()" title="Step 2: Generate Grounded Draft Replies for all classified enquiries">
-        ✍️ 2. Draft All Replies
+      <button class="btn btn-success" id="btnDraftAll" onclick="triggerDraftAll()" title="Langkah 2: Susun draf balasan untuk kasus terverifikasi">
+        ✍️ 2. Buat Draf Balasan
       </button>
-      <button class="btn btn-outline" id="btnProcessAll" onclick="triggerProcessAll()" title="Run end-to-end classification and drafting">
+      <button class="btn btn-outline" id="btnProcessAll" onclick="triggerProcessAll()" title="Jalankan klasifikasi dan penyusunan draf sekaligus secara otomatis">
         ⚡ All-in-One
       </button>
-      <button class="btn btn-outline" style="border-color: rgba(244, 63, 94, 0.5); color: var(--accent-rose);" id="btnResetDB" onclick="triggerResetDatabase()" title="Reset database to initial raw ingested state">
-        🔄 Reset System
+      <button class="btn btn-outline" style="border-color: rgba(244, 63, 94, 0.4); color: var(--accent-rose);" id="btnResetDB" onclick="triggerResetDatabase()" title="Kembalikan database ke data awal mentah">
+        🔄 Reset
       </button>
-      <button class="btn btn-outline" onclick="location.reload()">Refresh</button>
+      <button class="btn btn-outline" onclick="location.reload()" title="Muat ulang halaman">
+        ↻
+      </button>
     </div>
   </header>
 
@@ -1085,41 +1090,65 @@
     <!-- Metrics Grid -->
     <div class="metrics-grid">
       <div class="metric-card">
-        <span class="metric-title">Total Ingested</span>
+        <span class="metric-title">Total Kasus Masuk</span>
         <span class="metric-value">{{ total_enquiries }}</span>
       </div>
       <div class="metric-card">
-        <span class="metric-title">Pending Human Review</span>
+        <span class="metric-title">Perlu Review PIC</span>
         <span class="metric-value" style="color: var(--accent-amber);">{{ pending_review_count }}</span>
       </div>
       <div class="metric-card">
-        <span class="metric-title">Approved & Dispatched</span>
+        <span class="metric-title">Disetujui & Terkirim</span>
         <span class="metric-value" style="color: var(--accent-emerald);">{{ dispatched_count }}</span>
       </div>
       <div class="metric-card">
-        <span class="metric-title">Quarantined (Junk)</span>
+        <span class="metric-title">Karantina (Junk)</span>
         <span class="metric-value" style="color: var(--text-dim);">{{ quarantined_count }}</span>
       </div>
-      <div class="metric-card">
-        <span class="metric-title">Duplicate Reviews</span>
+      <div class="metric-card" onclick="switchView('duplicates')" style="cursor: pointer;" title="Klik untuk membuka tab Deteksi Duplikat & Kontak">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <span class="metric-title">Duplikat & Kontak</span>
+          <span style="font-size: 0.72rem; color: var(--accent-cyan); text-decoration: underline;">Buka Tab &rarr;</span>
+        </div>
         <span class="metric-value" style="color: var(--accent-cyan);">{{ pending_dups_count }}</span>
       </div>
     </div>
 
+    {% if pending_dups_count > 0 %}
+      <!-- Friendly Callout Banner for Duplicates -->
+      <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(15, 23, 42, 0.6)); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: var(--radius-sm); padding: 12px 18px; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 1.3rem;">💡</span>
+          <div>
+            <div style="font-weight: 600; font-size: 0.9rem; color: var(--accent-amber);">
+              Ada {{ pending_dups_count }} kontak & duplikasi yang perlu diverifikasi
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">
+              Sistem AI mendeteksi nomor telepon/email baru atau kemiripan perusahaan di CRM.
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-outline" style="border-color: rgba(245, 158, 11, 0.5); color: var(--accent-amber); font-size: 0.82rem; padding: 6px 14px;" onclick="switchView('duplicates')">
+          Periksa di Tab Duplikat &rarr;
+        </button>
+      </div>
+    {% endif %}
+
     <!-- Section 1: Enquiries Queue -->
     <div class="section-header">
       <div class="section-title">
-        <span>Enquiry Queue</span>
+        <span>Kotak Masuk Kasus (Enquiry Queue)</span>
         <span class="badge-count">{{ enquiries|length }} cases</span>
       </div>
       <div class="filter-group">
-        <button class="filter-btn active" onclick="filterTable('ALL')">All</button>
+        <button class="filter-btn active" onclick="filterTable('ALL')">Semua</button>
         <button class="filter-btn" onclick="filterTable('PENDING_REVIEW')">Pending</button>
         <button class="filter-btn" onclick="filterTable('APPROVED_DISPATCHED')">Dispatched</button>
         <button class="filter-btn" onclick="filterTable('QUARANTINED')">Quarantined</button>
         <button class="filter-btn" onclick="filterTable('REJECTED')">Rejected</button>
       </div>
     </div>
+
 
     <div class="table-container">
       <table>
@@ -1207,67 +1236,124 @@
         </tbody>
       </table>
     </div>
+  </div>
+  <!-- /viewEnquiries -->
 
-    <!-- Section 2: 3-Level Duplicate & Contact Entity Resolution Queue -->
-    <div class="section-header">
-      <div class="section-title">
-        <span>3-Level Entity Resolution & Deduplication Queue</span>
-        <span class="badge-count">{{ duplicate_reviews|length }} review items</span>
-      </div>
-    </div>
-
-    {% if duplicate_reviews|length == 0 %}
-      <div class="info-card" style="margin-bottom: 2rem; text-align: center; color: var(--text-dim);">
-        No pending duplicate or entity resolution reviews found.
-      </div>
-    {% else %}
-      <div class="duplicates-grid">
-        {% for dup in duplicate_reviews %}
-        <div class="dup-card" id="dup-card-{{ dup.id }}">
-          <div class="dup-header">
-            <div>
-              <span class="dup-level">{{ dup.match_level }}</span>
-              <span style="font-family: var(--font-mono); font-size: 0.85rem; margin-left: 8px; font-weight: 600;">
-                {{ dup.source_id }} &rarr; {{ dup.target_id }}
-              </span>
-            </div>
-            <span class="badge badge-{{ dup.status }}">{{ dup.status }}</span>
+    <!-- View 2: Deteksi Duplikat & Kontak (Terpisah agar halaman utama tidak membingungkan user) -->
+    <div id="viewDuplicates" style="display: none;">
+      <!-- Guidance Header -->
+      <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+        <div>
+          <div style="font-size: 1.15rem; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+            <span>👥 Verifikasi Duplikat & Pembaruan Kontak</span>
+            <span class="badge-count">{{ duplicate_reviews|length }} item</span>
           </div>
-
-          <div class="dup-desc">{{ dup.description }}</div>
-
-          {% if dup.unverified_claim %}
-            <div class="dup-claim-box">
-              <strong>Unverified Suggestion:</strong><br>
-              {{ dup.unverified_claim }}
-            </div>
-          {% endif %}
-
-          <div class="dup-actions">
-            {% if dup.status == 'PENDING' %}
-              <button class="btn btn-primary" onclick="resolveReview('{{ dup.id }}', 'merge')">
-                Merge as Duplicate
-              </button>
-              {% if dup.unverified_claim %}
-                <button class="btn btn-success" onclick="resolveReview('{{ dup.id }}', 'update-field')">
-                  Update CRM Field
-                </button>
-              {% endif %}
-              <button class="btn btn-outline" onclick="resolveReview('{{ dup.id }}', 'keep-separate')">
-                Keep Separate
-              </button>
-            {% else %}
-              <span style="font-size: 0.85rem; color: var(--text-dim); font-style: italic;">
-                Resolved ({{ dup.status }})
-              </span>
-            {% endif %}
-          </div>
+          <p style="font-size: 0.86rem; color: var(--text-muted); margin-top: 5px; max-width: 760px; line-height: 1.5;">
+            Sistem AI membandingkan data pengirim dengan entitas CRM dan riwayat kasus sebelumnya. Anda dapat memutuskan apakah kedua entitas ini perlu digabungkan, kontak diperbarui, atau tetap dipisahkan.
+          </p>
         </div>
-        {% endfor %}
+        <div class="filter-group">
+          <button class="filter-btn active dup-filter-btn" onclick="filterDuplicates('ALL', this)">Semua</button>
+          <button class="filter-btn dup-filter-btn" onclick="filterDuplicates('PENDING', this)">Perlu Konfirmasi ({{ pending_dups_count }})</button>
+          <button class="filter-btn dup-filter-btn" onclick="filterDuplicates('RESOLVED', this)">Sudah Selesai</button>
+        </div>
       </div>
-    {% endif %}
+
+      {% if duplicate_reviews|length == 0 %}
+        <div class="info-card" style="margin-bottom: 2rem; text-align: center; color: var(--text-dim); padding: 3rem;">
+          <div style="font-size: 2.2rem; margin-bottom: 8px;">🎉</div>
+          <div style="font-weight: 600; font-size: 1rem; color: var(--text-main);">Tidak Ada Duplikat yang Perlu Dikonfirmasi</div>
+          <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Seluruh data kontak dan riwayat enquiry telah bersih dan terverifikasi.</div>
+        </div>
+      {% else %}
+        <div class="duplicates-grid" id="duplicatesGrid">
+          {% for dup in duplicate_reviews %}
+          <div class="dup-card" id="dup-card-{{ dup.id }}" data-status="{{ dup.status }}">
+            <div class="dup-header" style="align-items: flex-start;">
+              <div>
+                <div style="margin-bottom: 6px;">
+                  {% if dup.match_level == 'LEVEL_1_CRM' %}
+                    <span class="badge" style="background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.4); color: var(--accent-purple);">
+                      🏢 Duplikat CRM (Perusahaan Kembar)
+                    </span>
+                  {% elif dup.match_level == 'LEVEL_2_ENQUIRY_CRM' %}
+                    <span class="badge" style="background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.4); color: var(--accent-cyan);">
+                      👤 Pelanggan Terdaftar di CRM
+                    </span>
+                  {% elif dup.match_level == 'LEVEL_3_ENQUIRY_ENQUIRY' %}
+                    <span class="badge" style="background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); color: var(--accent-amber);">
+                      🔄 Saran Pembaruan Kontak
+                    </span>
+                  {% else %}
+                    <span class="dup-level">{{ dup.match_level }}</span>
+                  {% endif %}
+                </div>
+                <div style="font-family: var(--font-mono); font-size: 0.9rem; font-weight: 600; color: var(--text-main);">
+                  {{ dup.source_id }} &rarr; {{ dup.target_id }}
+                </div>
+              </div>
+              <span class="badge badge-{{ dup.status }}">
+                {% if dup.status == 'PENDING' %}Menunggu Konfirmasi{% else %}{{ dup.status }}{% endif %}
+              </span>
+            </div>
+
+            <div class="dup-desc" style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; margin: 10px 0;">
+              {{ dup.description }}
+            </div>
+
+            {% if dup.parsed_claim %}
+              <div class="dup-claim-box" style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: var(--radius-sm); padding: 12px 14px; margin: 10px 0;">
+                <div style="font-weight: 600; font-size: 0.82rem; color: var(--accent-amber); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                  <span>📋 Rincian Kontak Ditemukan di Email:</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr; gap: 5px; font-size: 0.83rem;">
+                  {% if dup.parsed_claim.phone %}
+                    <div>📞 <strong>Nomor Telepon:</strong> <code style="color: var(--accent-cyan); font-family: var(--font-mono);">{{ dup.parsed_claim.phone }}</code></div>
+                  {% endif %}
+                  {% if dup.parsed_claim.email %}
+                    <div>✉️ <strong>Alamat Email:</strong> <code style="color: var(--accent-cyan); font-family: var(--font-mono);">{{ dup.parsed_claim.email }}</code></div>
+                  {% endif %}
+                  {% if dup.parsed_claim.company %}
+                    <div>🏢 <strong>Nama Perusahaan:</strong> {{ dup.parsed_claim.company }}</div>
+                  {% endif %}
+                  {% if dup.parsed_claim.contact %}
+                    <div>👤 <strong>Nama Kontak:</strong> {{ dup.parsed_claim.contact }}</div>
+                  {% endif %}
+                </div>
+              </div>
+            {% elif dup.unverified_claim %}
+              <div class="dup-claim-box" style="margin: 10px 0;">
+                <strong>Catatan Saran:</strong><br>
+                {{ dup.unverified_claim }}
+              </div>
+            {% endif %}
+
+            <div class="dup-actions" style="margin-top: 14px;">
+              {% if dup.status == 'PENDING' %}
+                <button class="btn btn-primary" onclick="resolveReview('{{ dup.id }}', 'merge')" title="Gabungkan kedua entitas karena merupakan entitas yang sama">
+                  🔗 Gabungkan Data
+                </button>
+                {% if dup.unverified_claim %}
+                  <button class="btn btn-success" onclick="resolveReview('{{ dup.id }}', 'update-field')" title="Perbarui data kontak di CRM dengan info baru ini">
+                    ✏️ Update Kontak CRM
+                  </button>
+                {% endif %}
+                <button class="btn btn-outline" onclick="resolveReview('{{ dup.id }}', 'keep-separate')" title="Biarkan tetap terpisah sebagai kontak berbeda">
+                  ✂️ Tetap Pisahkan
+                </button>
+              {% else %}
+                <span style="font-size: 0.85rem; color: var(--accent-emerald); font-weight: 500;">
+                  ✓ Selesai Dikonfirmasi ({{ dup.status }})
+                </span>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% endif %}
     </div>
-    <!-- /viewEnquiries -->
+    <!-- /viewDuplicates -->
+
 
     <!-- View 2: Audit & System Logs -->
     <div id="viewLogs" style="display: none;">
@@ -1384,6 +1470,7 @@
       </div>
     </div>
     <!-- /viewLogs -->
+  </main>
 
   <!-- Detail & Review Modal -->
   <div class="modal-overlay" id="reviewModal">
@@ -2121,7 +2208,7 @@
     }
 
 
-    // View Switching Logic (Enquiries vs Audit Logs)
+    // View Switching Logic (Enquiries vs Duplicates vs Audit Logs)
     let currentView = 'enquiries';
     let selectedLogStatus = 'ALL';
     let selectedLogStep = 'ALL';
@@ -2129,21 +2216,38 @@
     function switchView(viewName) {
       currentView = viewName;
       const viewEnq = document.getElementById('viewEnquiries');
+      const viewDups = document.getElementById('viewDuplicates');
       const viewLogs = document.getElementById('viewLogs');
       const tabEnq = document.getElementById('navTabEnquiries');
+      const tabDups = document.getElementById('navTabDuplicates');
       const tabLogs = document.getElementById('navTabLogs');
 
-      if (viewName === 'enquiries') {
-        viewEnq.style.display = 'block';
-        viewLogs.style.display = 'none';
-        tabEnq.classList.add('active');
-        tabLogs.classList.remove('active');
-      } else {
-        viewEnq.style.display = 'none';
-        viewLogs.style.display = 'block';
-        tabEnq.classList.remove('active');
-        tabLogs.classList.add('active');
-      }
+      if (viewEnq) viewEnq.style.display = (viewName === 'enquiries') ? 'block' : 'none';
+      if (viewDups) viewDups.style.display = (viewName === 'duplicates') ? 'block' : 'none';
+      if (viewLogs) viewLogs.style.display = (viewName === 'logs') ? 'block' : 'none';
+
+      if (tabEnq) tabEnq.classList.toggle('active', viewName === 'enquiries');
+      if (tabDups) tabDups.classList.toggle('active', viewName === 'duplicates');
+      if (tabLogs) tabLogs.classList.toggle('active', viewName === 'logs');
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function filterDuplicates(status, btn) {
+      document.querySelectorAll('.dup-filter-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      
+      const cards = document.querySelectorAll('#duplicatesGrid .dup-card');
+      cards.forEach(c => {
+        const cardStatus = c.getAttribute('data-status');
+        if (status === 'ALL') {
+          c.style.display = '';
+        } else if (status === 'PENDING') {
+          c.style.display = (cardStatus === 'PENDING') ? '' : 'none';
+        } else if (status === 'RESOLVED') {
+          c.style.display = (cardStatus !== 'PENDING') ? '' : 'none';
+        }
+      });
     }
 
     function filterLogsByStatus(status, btn) {
