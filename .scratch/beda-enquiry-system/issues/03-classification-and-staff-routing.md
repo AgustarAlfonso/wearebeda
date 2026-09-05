@@ -10,14 +10,15 @@ Includes boundary fixture support for fast, deterministic automated testing.
 
 **Blocked by:** 02 — Deterministic Exact Deduplication & Input Sanitisation Pipeline
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Classification pipeline calls Claude Haiku 4.5 using JSON schema tool use returning `category`, `confidence`, `extracted_fields`, `assigned_owner`, `needs_confirmation`, and `reasoning`.
-- [ ] Supported category enums restricted to exactly 5: `sales_lead`, `support`, `internal_alert`, `insufficient_info`, `junk`.
-- [ ] Staff routing assigns Matt Cooper to commercial leads (`sales_lead` and `insufficient_info`) by elimination.
-- [ ] Ties Rahardjo is assigned as single candidate (`needs_confirmation: false`) for completed project billing disputes (E003).
-- [ ] Multi-candidate routing correctly returns `["Ties Rahardjo", "Matt Cooper"]` with `needs_confirmation: true` for E008.
-- [ ] Zero-candidate routing returns `assigned_owner: []` with `needs_confirmation: true` and a domain gap rationale for E006, refusing to force assignment to Ali Pratama.
-- [ ] Non-business enquiries (E004 and E007) are categorized as `junk` and quarantined.
-- [ ] Audit log records classification outcome, model used, reasoning, and confidence.
-- [ ] Test suite verifies all 12 test cases against deterministic boundary fixtures.
+- [x] Classification pipeline calls Claude Haiku 4.5 using JSON schema tool use returning `category`, `confidence`, `extracted_fields`, `assigned_owner`, `needs_confirmation`, and `reasoning`.
+- [x] Supported category enums restricted to exactly 5: `sales_lead`, `support`, `internal_alert`, `insufficient_info`, `junk`.
+- [x] Staff routing assigns Matt Cooper to commercial leads (`sales_lead` and `insufficient_info`) by elimination.
+- [x] Ties Rahardjo is assigned as single candidate (`needs_confirmation: false`) for completed project billing disputes (E003).
+- [x] Multi-candidate routing correctly returns `["Ties Rahardjo", "Matt Cooper"]` with `needs_confirmation: true` for E008.
+- [x] Zero-candidate routing returns `assigned_owner: []` with `needs_confirmation: true` and a domain gap rationale for E006, refusing to force assignment to Ali Pratama.
+- [x] Non-business enquiries (E004 and E007) are categorized as `junk` and quarantined.
+- [x] Audit log records classification outcome, model used, reasoning, and confidence.
+- [x] Test suite verifies all 12 test cases against deterministic boundary fixtures.
+
