@@ -70,14 +70,15 @@ def draft_response_for_enquiry(
         else:
             draft_text = f"Dear {enquiry['sender_name'] or 'Customer'},\n\nThank you for reaching out regarding {enquiry['subject']}. We are reviewing your request and will follow up shortly.\n\nBest regards,\nBEDA Team"
     else:
-        if not ANTHROPIC_API_KEY:
+        live_key = os.getenv("ANTHROPIC_API_KEY", "") or ANTHROPIC_API_KEY
+        if not live_key:
             raise ValueError(
                 "ANTHROPIC_API_KEY tidak ditemukan di environment/.env! "
                 "Runtime sistem dikonfigurasi sebagai Pure Live LLM. "
                 "Silakan set ANTHROPIC_API_KEY di file .env untuk memproses drafting secara live."
             )
         # Live LLM call via Claude Sonnet 5
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        client = anthropic.Anthropic(api_key=live_key)
         clean_body = sanitise_text(enquiry["body"] or "")
 
         user_prompt = f"""Category: {category}
@@ -96,8 +97,7 @@ Draft the response now according to system rules."""
                 model=DRAFT_MODEL,
                 system=DRAFT_SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": user_prompt}],
-                max_tokens=1500,
-                temperature=0.2
+                max_tokens=1500
             )
             draft_text = response.content[0].text.strip()
 

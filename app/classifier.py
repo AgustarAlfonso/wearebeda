@@ -154,14 +154,15 @@ def classify_enquiry(
                 "reasoning": "Generic test fixture."
             }
     else:
-        if not ANTHROPIC_API_KEY:
+        live_key = os.getenv("ANTHROPIC_API_KEY", "") or ANTHROPIC_API_KEY
+        if not live_key:
             raise ValueError(
                 "ANTHROPIC_API_KEY tidak ditemukan di environment/.env! "
                 "Runtime sistem dikonfigurasi sebagai Pure Live LLM. "
                 "Silakan set ANTHROPIC_API_KEY di file .env untuk memproses enquiry secara live."
             )
         # Pure Live LLM Call (Haiku)
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        client = anthropic.Anthropic(api_key=live_key)
         user_message = f"Sender: {enquiry['sender_name']} <{enquiry['sender_email']}>\nSubject: {enquiry['subject']}\nChannel: {enquiry['channel']}\n\nEnquiry Context:\n{clean_text}"
 
         try:
@@ -171,8 +172,7 @@ def classify_enquiry(
                 messages=[{"role": "user", "content": user_message}],
                 tools=[CLASSIFY_TOOL],
                 tool_choice={"type": "tool", "name": "classify_and_extract"},
-                max_tokens=1000,
-                temperature=0.0
+                max_tokens=1000
             )
 
             tool_input = None

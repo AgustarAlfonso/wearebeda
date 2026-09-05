@@ -2,10 +2,12 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load .env if present
-load_dotenv()
-
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load .env if present in project root or app folder
+load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR / "app" / ".env")
+
 DATA_PATH = os.getenv("DATA_PATH", str(BASE_DIR / "data" / "data.md"))
 DATABASE_PATH = os.getenv("DATABASE_PATH", str(BASE_DIR / "beda_system.db"))
 

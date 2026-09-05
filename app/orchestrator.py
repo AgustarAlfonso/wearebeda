@@ -49,6 +49,18 @@ def process_enquiry(
 
     # 3. Structured Classification & Staff Routing (Haiku 4.5)
     classification = classify_enquiry(enquiry_id, db_path=db_path, use_fixtures=use_fixtures)
+    if "error" in classification:
+        return {
+            "id": enquiry_id,
+            "status": "NEEDS_MANUAL_REVIEW",
+            "category": None,
+            "assigned_owner": None,
+            "needs_confirmation": False,
+            "crm_matches": len(crm_matches),
+            "enquiry_matches": len(enq_matches),
+            "has_draft": False,
+            "error": classification["error"]
+        }
 
     # 4. Grounded Drafting / Incident Ticket Generation (Sonnet 5)
     draft_text = draft_response_for_enquiry(enquiry_id, db_path=db_path, use_fixtures=use_fixtures)

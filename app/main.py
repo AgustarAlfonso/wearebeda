@@ -344,7 +344,9 @@ def api_resolve_all_entities():
 @app.post("/api/process-all")
 def api_process_all():
     from dotenv import load_dotenv
-    load_dotenv(override=True)
+    from app.config import BASE_DIR
+    load_dotenv(BASE_DIR / ".env", override=True)
+    load_dotenv(BASE_DIR / "app" / ".env", override=True)
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
     if not api_key:
         raise HTTPException(
@@ -353,14 +355,24 @@ def api_process_all():
         )
     try:
         res = process_all_enquiries(db_path=DATABASE_PATH, use_fixtures=False)
+        errors = [r["error"] for r in res.get("results", []) if "error" in r]
+        if errors:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Proses AI terhenti: {errors[0]}"
+            )
         return {"status": "ok", "processed": res["total_processed"], "results": res["results"]}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/enquiries/{enquiry_id}/process")
 def api_process_single(enquiry_id: str):
     from dotenv import load_dotenv
-    load_dotenv(override=True)
+    from app.config import BASE_DIR
+    load_dotenv(BASE_DIR / ".env", override=True)
+    load_dotenv(BASE_DIR / "app" / ".env", override=True)
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
     if not api_key:
         raise HTTPException(
@@ -369,7 +381,11 @@ def api_process_single(enquiry_id: str):
         )
     try:
         res = process_enquiry(enquiry_id, db_path=DATABASE_PATH, use_fixtures=False)
+        if "error" in res:
+            raise HTTPException(status_code=400, detail=res["error"])
         return {"status": "ok", "result": res}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
