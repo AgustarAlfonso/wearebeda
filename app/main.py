@@ -113,6 +113,7 @@ def get_dashboard(request: Request):
     pending_review_count = sum(1 for e in enquiries if e.get("status") == "PENDING_REVIEW")
     dispatched_count = sum(1 for e in enquiries if e.get("status") == "APPROVED_DISPATCHED")
     quarantined_count = sum(1 for e in enquiries if e.get("status") == "QUARANTINED")
+    security_quarantined_count = sum(1 for e in enquiries if e.get("status") == "QUARANTINED_SECURITY")
     pending_dups_count = sum(1 for d in dups if d.get("status") == "PENDING")
 
     conn.close()
@@ -129,6 +130,7 @@ def get_dashboard(request: Request):
             "pending_review_count": pending_review_count,
             "dispatched_count": dispatched_count,
             "quarantined_count": quarantined_count,
+            "security_quarantined_count": security_quarantined_count,
             "pending_dups_count": pending_dups_count
         }
     )
@@ -232,6 +234,15 @@ def approve_enquiry(enquiry_id: str, req: Optional[ApproveRequest] = None):
     if not enq:
         conn.close()
         raise HTTPException(status_code=404, detail=f"Enquiry {enquiry_id} not found")
+
+    # Block dispatch for security-quarantined items
+    if enq["status"] == "QUARANTINED_SECURITY":
+        conn.close()
+        raise HTTPException(
+            status_code=403,
+            detail=f"Enquiry {enquiry_id} is quarantined due to detected adversarial content. "
+                   f"A security review must clear this item before dispatch is permitted."
+        )
 
     now_ts = datetime.now(timezone.utc).isoformat()
     draft_to_send = req.draft_response if (req and req.draft_response) else enq["draft_response"]
@@ -433,8 +444,32 @@ def get_crm_record(crm_id: str):
     conn.close()
     return crm
 
+def _check_review_security_quarantine(review_id: int, conn):
+    """Block CRM mutations if either entity in the review is security-quarantined."""
+    cursor = conn.cursor()
+    cursor.execute("SELECT source_id, target_id FROM duplicate_reviews WHERE id = ?", (review_id,))
+    review = cursor.fetchone()
+    if not review:
+        return
+    for entity_id in [review["source_id"], review["target_id"]]:
+        if entity_id and entity_id.startswith("E"):
+            cursor.execute("SELECT status FROM enquiries WHERE id = ?", (entity_id,))
+            enq = cursor.fetchone()
+            if enq and enq["status"] == "QUARANTINED_SECURITY":
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Entity {entity_id} in this review is quarantined due to detected "
+                           f"adversarial content. A security review must clear this item "
+                           f"before CRM mutations are permitted."
+                )
+
 @app.post("/api/reviews/{review_id}/merge")
 def api_merge_review(review_id: int, req: Optional[MergeRequest] = None):
+    conn = get_db_connection(DATABASE_PATH)
+    try:
+        _check_review_security_quarantine(review_id, conn)
+    finally:
+        conn.close()
     user_note = req.user_note if req else None
     try:
         res = merge_review(review_id, db_path=DATABASE_PATH, user_note=user_note)
@@ -444,6 +479,11 @@ def api_merge_review(review_id: int, req: Optional[MergeRequest] = None):
 
 @app.post("/api/reviews/{review_id}/update-field")
 def api_update_field(review_id: int, req: Optional[UpdateFieldRequest] = None):
+    conn = get_db_connection(DATABASE_PATH)
+    try:
+        _check_review_security_quarantine(review_id, conn)
+    finally:
+        conn.close()
     field = req.field if req else None
     value = req.value if req else None
     try:

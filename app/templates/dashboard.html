@@ -401,7 +401,23 @@
     .badge-APPROVED_DISPATCHED { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
     .badge-REJECTED { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
     .badge-QUARANTINED { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.3); }
+    .badge-QUARANTINED_SECURITY { background: rgba(244, 63, 94, 0.25); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.5); font-weight: 600; }
+    .badge-CLASSIFIED { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
     .badge-INGESTED { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+
+    .injection-warning {
+      display: none;
+      background: rgba(244, 63, 94, 0.12);
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      font-size: 0.84rem;
+      color: #fb7185;
+      line-height: 1.5;
+    }
+    .injection-warning.visible { display: block; }
+    .injection-warning strong { color: #f43f5e; }
 
     .uncertainty-flag {
       display: inline-flex;
@@ -1108,6 +1124,12 @@
         <span class="metric-title">Quarantined (Junk)</span>
         <span class="metric-value" style="color: var(--text-dim);">{{ quarantined_count }}</span>
       </div>
+      {% if security_quarantined_count > 0 %}
+      <div class="metric-card" style="border-color: rgba(244, 63, 94, 0.4);">
+        <span class="metric-title" style="color: #fb7185;">Security Quarantined</span>
+        <span class="metric-value" style="color: #f43f5e;">{{ security_quarantined_count }}</span>
+      </div>
+      {% endif %}
       <div class="metric-card" onclick="switchView('duplicates')" style="cursor: pointer;" title="Open Duplicate & Contact Review tab">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
           <span class="metric-title">Duplicate & Contact Alerts</span>
@@ -1698,6 +1720,12 @@
       </div>
 
       <div class="modal-body">
+        <!-- Injection Warning Banner (shown by JS when injection_flags present) -->
+        <div class="injection-warning" id="modalInjectionWarning">
+          <strong>Adversarial Content Detected</strong><br>
+          <span id="modalInjectionDetail"></span>
+        </div>
+
         <!-- Left Column: Context & Metadata -->
         <div class="modal-panel">
           <div>
@@ -2008,6 +2036,29 @@
         document.getElementById('modalOwner').innerText = owners.length ? owners.join(', ') : 'None';
         document.getElementById('modalReasoning').innerText = data.reasoning || (data.extracted_fields ? JSON.parse(data.extracted_fields).request_summary : 'No reasoning recorded');
 
+        // Injection warning banner
+        const injWarning = document.getElementById('modalInjectionWarning');
+        const injDetail = document.getElementById('modalInjectionDetail');
+        let injFlags = null;
+        if (data.extracted_fields) {
+          try {
+            const ef = typeof data.extracted_fields === 'string' ? JSON.parse(data.extracted_fields) : data.extracted_fields;
+            injFlags = ef.injection_flags || null;
+          } catch(e) {}
+        }
+        if (data.status === 'QUARANTINED_SECURITY' || injFlags) {
+          const severity = data.status === 'QUARANTINED_SECURITY' ? 'HIGH' : (injFlags ? injFlags.severity.toUpperCase() : 'LOW');
+          const patterns = injFlags ? injFlags.matched_patterns.join(', ') : 'See audit log';
+          injDetail.innerHTML = `Severity: <strong>${escapeHtml(severity)}</strong>. ` +
+            `Matched patterns: ${escapeHtml(patterns)}. ` +
+            (data.status === 'QUARANTINED_SECURITY'
+              ? 'This item is blocked from dispatch and CRM mutations until a security review clears it.'
+              : 'Classification proceeded with hardened prompt. Review the draft carefully before approving.');
+          injWarning.classList.add('visible');
+        } else {
+          injWarning.classList.remove('visible');
+        }
+
         // Attachment Viewer
         const attSec = document.getElementById('modalAttachmentSection');
         if (data.attachments && data.attachments.length > 0) {
@@ -2019,7 +2070,7 @@
         }
 
         // Draft
-        document.getElementById('modalDraftText').value = data.draft_response || (data.category === 'junk' ? '[QUARANTINED - NO DRAFT CREATED]' : '');
+        document.getElementById('modalDraftText').value = data.draft_response || (data.status === 'QUARANTINED_SECURITY' ? '[SECURITY QUARANTINED - BLOCKED FROM DISPATCH]' : (data.category === 'junk' ? '[QUARANTINED - NO DRAFT CREATED]' : ''));
         
         if (data.category === 'internal_alert') {
           document.getElementById('draftSectionTitle').innerText = 'Internal Incident Ticket (Ali Pratama)';

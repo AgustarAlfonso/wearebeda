@@ -10,7 +10,7 @@ BEDA processes diverse inbound communications across email, web forms, and inter
 
 Deploying unconstrained autonomous AI agents to send emails or mutate customer records directly poses commercial, legal, and operational risks. The **BEDA Automated Business Enquiry Handling System** mitigates this through:
 
-1. **Defensive Ingestion and Sanitisation:** Defuses prompt-injection attempts and normalizes email bodies and file attachments.
+1. **Adversarial Input Hardening & Evidence Preservation:** Detects and audits adversarial instructions (prompt injection, data exfiltration, approval-bypass commands) across email bodies and attachments without destroying source evidence (`raw_content` preserved). High-density threats are quarantined (`QUARANTINED_SECURITY`), low-density patterns continue with hardened prompts (`<untrusted_content>`), and outbound dispatch/CRM mutations are strictly locked behind human approval.
 2. **Defensive CRM Seeding:** Realigns malformed CRM data (such as row C002 missing the phone column) using closed-set enum validation.
 3. **Three-Level Entity Resolution:** Identifies CRM-internal duplicates (Level 1: C001 vs C002), Enquiry-to-CRM matches (Level 2: E001/E002), and sequential enquiry contact updates (Level 3: E009 to E010). Surfaces unverified contact claims for human review without silently mutating trusted data.
 4. **Preservation of Uncertainty:** Routes enquiries to single staff owners, multi-candidate owners (`[Ties Rahardjo, Matt Cooper]` for E008), or zero-candidate owners (`[]` for E006) with `needs_confirmation: true`, refusing to guess unrepresented domains.
@@ -139,11 +139,11 @@ Interactive API documentation (Swagger UI) is available at: **[http://127.0.0.1:
 
 ## 5. Testing and Verification
 
-The repository contains 38 automated unit and integration tests covering the entire pipeline:
+The repository contains 43 automated unit and integration tests covering the entire pipeline:
 ```bash
 python -m pytest -m "not live_llm"
 ```
-*Expected Output:* **38 passed, 1 deselected in ~17s** (1 deselected is the isolated live smoke test when live API keys are not supplied in CI).
+*Expected Output:* **43 passed, 1 deselected in ~18s** (1 deselected is the isolated live smoke test when live API keys are not supplied in CI).
 
 ### Running the Isolated Live Smoke Test
 To test live handshake connectivity against Google Gemini 3.8 Flash endpoints:
@@ -170,6 +170,7 @@ python -m pytest -m live_llm
 1. **Live LLM Non-Determinism:** Even with `temperature=0.0`, live LLM responses can exhibit slight syntactic variations across runs. *(Mitigated in CI via the Two-Tier Testing Boundary and deterministic fixtures).*
 2. **Single-Process SQLite Locking:** SQLite in standard mode can encounter concurrency contention when background threads and web requests perform concurrent writes. *(Mitigated by enabling WAL mode and 30-second busy timeouts).*
 3. **Plain Text Attachment Normalization:** Inbound attachments are normalized as sanitized text. Unstructured PDF or image bills currently rely on upstream OCR or text extraction.
+4. **Human Reviewer Targeting via Prompt Injections:** In low-severity cases where classification continues, subtle adversarial phrasing could attempt to influence human reviewers through drafted responses. BEDA mitigates this by flagging `injection_flags` directly in the review UI with prominent alert banners, wrapping content in `<untrusted_content>`, and preventing auto-approval or CRM mutations without manual verification.
 
 ### Future Roadmap
 1. **Automated Feedback Learning Loop:** Capture human reviewer edits and rejections into an active evaluation dataset to continuously refine few-shot exemplars.

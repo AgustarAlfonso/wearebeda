@@ -180,6 +180,22 @@ FIXTURES_CLASSIFY: Dict[str, Dict[str, Any]] = {
             "missing_fields": ["landlord_approval", "roof_lease_terms"]
         },
         "reasoning": "Commercial solar inquiry lacking critical landlord permission for roof works; assigned to Matt Cooper."
+    },
+    "E_SUSPICIOUS_LEGIT": {
+        "category": "sales_lead",
+        "confidence": 0.90,
+        "assigned_owner": ["Matt Cooper"],
+        "needs_confirmation": False,
+        "extracted_fields": {
+            "sender_name": "Marcus Vance",
+            "sender_email": "marcus@vicmanufacturing.example",
+            "company_name": "Victoria Manufacturing Pty Ltd",
+            "phone": "0412 345 678",
+            "request_summary": "Updated commercial solar inquiry with 45,000 kWh consumption (forwarded thread correction).",
+            "consumption_kwh": "45,000",
+            "missing_fields": []
+        },
+        "reasoning": "Commercial solar lead referencing 45,000 kWh consumption. Phrase 'ignore the previous email' is benign conversational correction, not an adversarial instruction override."
     }
 }
 
@@ -294,6 +310,15 @@ For a 70 square metre leased space spending approximately $900 per month on elec
 We recommend having an initial discussion with your landlord regarding roof access rights. Once you have preliminary permission, we would be pleased to evaluate your switchboard and roof layout to provide an accurate quotation.
 
 Kind regards,
+BEDA Commercial Solar Team""",
+
+    "E_SUSPICIOUS_LEGIT": """Dear Marcus,
+
+Thank you for providing the updated pricing and consumption details (45,000 kWh) for Victoria Manufacturing.
+
+Our commercial solar specialist, Matt Cooper, is reviewing your facility profile and will follow up with an updated proposal shortly.
+
+Best regards,
 BEDA Commercial Solar Team"""
 }
 
