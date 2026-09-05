@@ -7,9 +7,10 @@ from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from app.config import DATABASE_PATH, DATA_PATH
+from app.config import DATABASE_PATH, DATA_PATH, ANTHROPIC_API_KEY
 from app.database import get_db_connection, init_db, log_audit
 from app.seeder import seed_database_from_file
+from app.orchestrator import process_enquiry, process_all_enquiries
 from app.entity_resolver import (
     run_level_1_crm_resolution,
     resolve_enquiry_crm_matches,
@@ -339,5 +340,38 @@ def api_keep_separate(review_id: int, req: Optional[KeepSeparateRequest] = None)
 def api_resolve_all_entities():
     resolve_all_entities(db_path=DATABASE_PATH)
     return {"status": "ok", "message": "All entities resolved."}
+
+@app.post("/api/process-all")
+def api_process_all():
+    from dotenv import load_dotenv
+    load_dotenv(override=True)
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(
+            status_code=400,
+            detail="ANTHROPIC_API_KEY belum ditemukan di file .env! Silakan masukkan key Anda ke file .env di folder proyek terlebih dahulu."
+        )
+    try:
+        res = process_all_enquiries(db_path=DATABASE_PATH, use_fixtures=False)
+        return {"status": "ok", "processed": res["total_processed"], "results": res["results"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/enquiries/{enquiry_id}/process")
+def api_process_single(enquiry_id: str):
+    from dotenv import load_dotenv
+    load_dotenv(override=True)
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(
+            status_code=400,
+            detail="ANTHROPIC_API_KEY belum ditemukan di file .env! Silakan masukkan key Anda ke file .env di folder proyek terlebih dahulu."
+        )
+    try:
+        res = process_enquiry(enquiry_id, db_path=DATABASE_PATH, use_fixtures=False)
+        return {"status": "ok", "result": res}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 

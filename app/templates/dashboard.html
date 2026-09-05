@@ -629,9 +629,12 @@
     <div class="header-actions">
       <div class="status-indicator">
         <div class="status-dot"></div>
-        <span>Pipeline Operational</span>
+        <span>Pipeline Ready</span>
       </div>
-      <button class="btn btn-outline" onclick="location.reload()">Refresh Queue</button>
+      <button class="btn btn-primary" id="btnProcessAll" onclick="triggerProcessAll()">
+        ⚡ Process All with Live AI
+      </button>
+      <button class="btn btn-outline" onclick="location.reload()">Refresh</button>
     </div>
   </header>
 
@@ -739,8 +742,13 @@
             </td>
             <td>
               <div style="display: flex; gap: 6px;">
-                <button class="btn btn-primary" onclick="openReviewModal('{{ enq.id }}')">
-                  Inspect & Review
+                {% if enq.status == 'INGESTED' %}
+                  <button class="btn btn-primary" onclick="processSingleEnquiry('{{ enq.id }}')">
+                    ⚡ Process AI
+                  </button>
+                {% endif %}
+                <button class="btn btn-outline" onclick="openReviewModal('{{ enq.id }}')">
+                  Inspect
                 </button>
                 {% if enq.status == 'PENDING_REVIEW' %}
                   <button class="btn btn-success" onclick="quickApprove('{{ enq.id }}')">Approve</button>
@@ -1083,6 +1091,43 @@
         });
         if (!res.ok) throw new Error("Action failed");
         showToast(`Duplicate review ${reviewId} successfully set to ${action.toUpperCase()}`);
+        setTimeout(() => location.reload(), 1000);
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    async function triggerProcessAll() {
+      const btn = document.getElementById('btnProcessAll');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '⏳ Processing with Claude Live...';
+      btn.disabled = true;
+      showToast("Memanggil Claude Haiku 4.5 & Sonnet 5 untuk memproses seluruh enquiry... Mohon tunggu sebentar.");
+
+      try {
+        const res = await fetch('/api/process-all', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || "Gagal memproses enquiry via AI");
+        }
+        showToast(`Berhasil! ${data.processed} kasus telah diproses langsung oleh Claude.`);
+        setTimeout(() => location.reload(), 1200);
+      } catch (err) {
+        showToast(err.message, true);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    }
+
+    async function processSingleEnquiry(enquiryId) {
+      showToast(`Memproses ${enquiryId} via Claude API...`);
+      try {
+        const res = await fetch(`/api/enquiries/${enquiryId}/process`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || "Gagal memproses enquiry");
+        }
+        showToast(`Enquiry ${enquiryId} berhasil diproses langsung oleh Claude!`);
         setTimeout(() => location.reload(), 1000);
       } catch (err) {
         showToast(err.message, true);
