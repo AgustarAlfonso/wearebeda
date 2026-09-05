@@ -5,12 +5,13 @@ A robust database and seed ingestion subsystem. On startup or database initializ
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] SQLite database schema initialized with tables for `crm_records`, `enquiries`, `attachments`, `audit_logs`, and `dispatched_messages`.
-- [ ] Startup seeder parses `data/data.md` and accurately seeds staff directory (Matt Cooper, Ties Rahardjo, Zidane Mouldino, Ali Pratama).
-- [ ] Defensive parsing handles malformed row C002, correctly populating `id='C002'`, `company='Hume Logistic'`, `contact='Amelia Grant'`, `email='a.grant@humelogistics.example'`, `phone=None`, `location='Melbourne VIC'`, `type='Lead'`, `interest='Solar'`, and `status='New'`.
-- [ ] An audit log entry is recorded during seed validation: `input_id='C002'`, `step='seed_validation'`, `status='warning'`.
-- [ ] Pairwise check flags C001 and C002 as a Level 1 potential duplicate match and places them into the review queue.
-- [ ] Basic `GET /health` endpoint returns database and seed status.
-- [ ] Automated tests verify seeder behavior and malformed row recovery.
+- [x] SQLite database schema initialized with tables for `crm_records`, `enquiries`, `attachments`, `audit_logs`, and `dispatched_messages`.
+- [x] Startup seeder parses `data/data.md` and accurately seeds staff directory (Matt Cooper, Ties Rahardjo, Zidane Mouldino, Ali Pratama).
+- [x] Defensive parsing handles malformed row C002, correctly populating `id='C002'`, `company='Hume Logistic'`, `contact='Amelia Grant'`, `email='a.grant@humelogistics.example'`, `phone=None`, `location='Melbourne VIC'`, `type='Lead'`, `interest='Solar'`, and `status='New'`.
+- [x] An audit log entry is recorded during seed validation: `input_id='C002'`, `step='seed_validation'`, `status='warning'`.
+- [x] Pairwise check flags C001 and C002 as a Level 1 potential duplicate match and places them into the review queue.
+- [x] Basic `GET /health` endpoint returns database and seed status.
+- [x] Automated tests verify seeder behavior and malformed row recovery.
+

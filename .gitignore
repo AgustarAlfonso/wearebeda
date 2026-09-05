@@ -1,0 +1,17 @@
+# Environment variables
+.env
+*.env
+
+# SQLite databases
+*.db
+*.sqlite3
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# System / IDE
+.DS_Store
+Thumbs.db
