@@ -5,7 +5,7 @@ from google import genai
 from google.genai import types
 from google.genai.errors import APIError
 
-from app.config import GEMINI_API_KEY, GEMINI_MODEL, ANTHROPIC_API_KEY, DRAFT_MODEL
+from app.config import GEMINI_API_KEY, GEMINI_MODEL, GEMINI_MODELS, ANTHROPIC_API_KEY, DRAFT_MODEL
 from app.database import get_db_connection, log_audit
 from app.sanitiser import sanitise_text
 from app.fixtures import FIXTURES_DRAFT
@@ -65,6 +65,7 @@ def draft_response_for_enquiry(
         crm_context = f"Matched CRM Record: ID={crm_record['id']}, Company={crm_record['company']}, Contact={crm_record['contact']}, Type={crm_record['type']}, Interest={crm_record['interest']}, Status={crm_record['status']}"
 
     draft_text: Optional[str] = None
+    successful_model: str = GEMINI_MODEL
 
     if use_fixtures:
         if enquiry_id in FIXTURES_DRAFT:
@@ -79,7 +80,7 @@ def draft_response_for_enquiry(
                 "Runtime sistem dikonfigurasi sebagai Pure Live LLM (Gemini 3.8 Flash). "
                 "Silakan set GEMINI_API_KEY di file .env untuk memproses drafting secara live."
             )
-        # Live LLM call via Gemini 3.8 Flash
+        # Multi-Model Fallback Execution (Gemini Cascade)
         client = genai.Client(api_key=live_key)
         clean_body = sanitise_text(enquiry["body"] or "")
 
@@ -94,28 +95,40 @@ Body:\n{clean_body}
 
 Draft the response now according to system rules."""
 
-        try:
-            config = types.GenerateContentConfig(
-                system_instruction=DRAFT_SYSTEM_PROMPT,
-                max_output_tokens=1500,
-                temperature=0.2
-            )
-            response = client.models.generate_content(
-                model=GEMINI_MODEL,
-                contents=user_prompt,
-                config=config
-            )
-            draft_text = response.text.strip() if response.text else ""
+        successful_model = None
+        last_error = None
+        draft_text = ""
 
-        except Exception as e:
-            err_msg = f"Gagal menyusun draf respon via Gemini: {str(e)}"
+        config = types.GenerateContentConfig(
+            system_instruction=DRAFT_SYSTEM_PROMPT,
+            max_output_tokens=1500,
+            temperature=0.2
+        )
+
+        for model_name in GEMINI_MODELS:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=user_prompt,
+                    config=config
+                )
+                if response.text:
+                    draft_text = response.text.strip()
+                    successful_model = model_name
+                    break
+            except Exception as e:
+                last_error = e
+                continue
+
+        if not draft_text or not successful_model:
+            err_msg = f"Seluruh model Gemini ({', '.join(GEMINI_MODELS)}) gagal menyusun draf: {str(last_error)}"
             log_audit(
                 input_id=enquiry_id,
                 step="draft_response",
-                output={"error": str(e)},
+                output={"error": str(last_error)},
                 reasoning=err_msg,
                 status="needs_review",
-                model_used=GEMINI_MODEL,
+                model_used=GEMINI_MODELS[0],
                 db_path=db_path,
                 conn=conn
             )
@@ -140,7 +153,7 @@ Draft the response now according to system rules."""
         output={"draft": draft_text},
         reasoning="Grounded draft response generated and queued for human approval.",
         status="success",
-        model_used=GEMINI_MODEL,
+        model_used=successful_model or GEMINI_MODEL,
         db_path=db_path,
         conn=conn
     )

@@ -73,5 +73,5 @@ def test_draft_records_audit_log(test_db_path):
     log = cursor.fetchone()
     assert log is not None
     assert log["status"] == "success"
-    assert log["model_used"] in ["gemini-3.8-flash", "claude-sonnet-5"]
+    assert "gemini" in log["model_used"] or "claude" in log["model_used"]
     conn.close()

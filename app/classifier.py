@@ -7,7 +7,7 @@ from google import genai
 from google.genai import types
 from google.genai.errors import APIError
 
-from app.config import GEMINI_API_KEY, GEMINI_MODEL, ANTHROPIC_API_KEY, CLASSIFY_MODEL
+from app.config import GEMINI_API_KEY, GEMINI_MODEL, GEMINI_MODELS, ANTHROPIC_API_KEY, CLASSIFY_MODEL
 from app.database import get_db_connection, log_audit
 from app.sanitiser import sanitise_text
 from app.dedup import check_exact_duplicate
@@ -152,6 +152,7 @@ def classify_enquiry(
 
     # 4. Classification & Extraction
     result: Dict[str, Any]
+    successful_model: str = GEMINI_MODEL
 
     if use_fixtures:
         if enquiry_id in FIXTURES_CLASSIFY:
@@ -181,37 +182,39 @@ def classify_enquiry(
                 "Runtime sistem dikonfigurasi sebagai Pure Live LLM (Gemini 3.8 Flash). "
                 "Silakan set GEMINI_API_KEY di file .env untuk memproses enquiry secara live."
             )
-        # Pure Live LLM Call (Gemini 3.8 Flash)
+        # Multi-Model Fallback Execution (Gemini Cascade)
         client = genai.Client(api_key=live_key)
         user_message = f"Sender: {enquiry['sender_name']} <{enquiry['sender_email']}>\nSubject: {enquiry['subject']}\nChannel: {enquiry['channel']}\n\nEnquiry Context:\n{clean_text}"
 
-        try:
-            config = types.GenerateContentConfig(
-                system_instruction=CLASSIFY_SYSTEM_PROMPT,
-                response_mime_type="application/json",
-                response_schema=ClassificationResult,
-                temperature=0.0
-            )
-            response = client.models.generate_content(
-                model=GEMINI_MODEL,
-                contents=user_message,
-                config=config
-            )
-            if not response.text:
-                raise ValueError("Gemini model returned empty classification text.")
-            result = json.loads(response.text)
+        successful_model = None
+        last_error = None
+        result = None
 
-        except APIError as e:
-            err_msg = f"Proses AI Gemini gagal — API/Quota error: {str(e)}. Enquiry masuk antrean Needs Manual Review."
-            log_audit(enquiry_id, "classify", {"error": str(e)}, err_msg, "needs_review", GEMINI_MODEL, db_path, conn)
-            cursor.execute("UPDATE enquiries SET status = 'NEEDS_MANUAL_REVIEW', updated_at = datetime('now') WHERE id = ?", (enquiry_id,))
-            conn.commit()
-            conn.close()
-            return {"error": err_msg, "status": "NEEDS_MANUAL_REVIEW"}
+        config = types.GenerateContentConfig(
+            system_instruction=CLASSIFY_SYSTEM_PROMPT,
+            response_mime_type="application/json",
+            response_schema=ClassificationResult,
+            temperature=0.0
+        )
 
-        except Exception as e:
-            err_msg = f"Proses AI Gemini gagal — kesalahan jaringan/runtime: {str(e)}. Enquiry masuk antrean Needs Manual Review."
-            log_audit(enquiry_id, "classify", {"error": str(e)}, err_msg, "needs_review", GEMINI_MODEL, db_path, conn)
+        for model_name in GEMINI_MODELS:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=user_message,
+                    config=config
+                )
+                if response.text:
+                    result = json.loads(response.text)
+                    successful_model = model_name
+                    break
+            except Exception as e:
+                last_error = e
+                continue
+
+        if not result or not successful_model:
+            err_msg = f"Seluruh model Gemini ({', '.join(GEMINI_MODELS)}) gagal atau mencapai limit kuota: {str(last_error)}. Enquiry masuk antrean Needs Manual Review."
+            log_audit(enquiry_id, "classify", {"error": str(last_error)}, err_msg, "needs_review", GEMINI_MODELS[0], db_path, conn)
             cursor.execute("UPDATE enquiries SET status = 'NEEDS_MANUAL_REVIEW', updated_at = datetime('now') WHERE id = ?", (enquiry_id,))
             conn.commit()
             conn.close()
@@ -251,7 +254,7 @@ def classify_enquiry(
         output=result,
         reasoning=result["reasoning"],
         status="success",
-        model_used=GEMINI_MODEL,
+        model_used=successful_model or GEMINI_MODEL,
         db_path=db_path,
         conn=conn
     )
