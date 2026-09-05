@@ -1,10 +1,14 @@
 import os
+import json
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from typing import Optional, Dict, Any, List
 from pydantic import BaseModel
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from app.config import DATABASE_PATH, DATA_PATH
-from app.database import get_db_connection, init_db
+from app.database import get_db_connection, init_db, log_audit
 from app.seeder import seed_database_from_file
 from app.entity_resolver import (
     run_level_1_crm_resolution,
@@ -37,6 +41,9 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+templates_dir = os.path.join(os.path.dirname(__file__), "templates")
+templates = Jinja2Templates(directory=templates_dir)
+
 class MergeRequest(BaseModel):
     user_note: Optional[str] = None
 
@@ -46,6 +53,59 @@ class UpdateFieldRequest(BaseModel):
 
 class KeepSeparateRequest(BaseModel):
     note: Optional[str] = None
+
+class ApproveRequest(BaseModel):
+    draft_response: Optional[str] = None
+
+class EditDraftRequest(BaseModel):
+    draft_response: str
+
+class RejectRequest(BaseModel):
+    feedback: str
+
+@app.get("/", response_class=HTMLResponse)
+def get_dashboard(request: Request):
+    conn = get_db_connection(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM enquiries ORDER BY id ASC")
+    raw_enquiries = cursor.fetchall()
+    enquiries = []
+    for enq in raw_enquiries:
+        e_dict = dict(enq)
+        if e_dict.get("assigned_owner"):
+            try:
+                e_dict["assigned_owner_list"] = json.loads(e_dict["assigned_owner"])
+            except Exception:
+                e_dict["assigned_owner_list"] = [e_dict["assigned_owner"]]
+        else:
+            e_dict["assigned_owner_list"] = []
+        enquiries.append(e_dict)
+
+    cursor.execute("SELECT * FROM duplicate_reviews ORDER BY id ASC")
+    dups = [dict(r) for r in cursor.fetchall()]
+
+    total_enquiries = len(enquiries)
+    pending_review_count = sum(1 for e in enquiries if e.get("status") == "PENDING_REVIEW")
+    dispatched_count = sum(1 for e in enquiries if e.get("status") == "APPROVED_DISPATCHED")
+    quarantined_count = sum(1 for e in enquiries if e.get("status") == "QUARANTINED")
+    pending_dups_count = sum(1 for d in dups if d.get("status") == "PENDING")
+
+    conn.close()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="dashboard.html",
+        context={
+            "enquiries": enquiries,
+            "duplicate_reviews": dups,
+            "total_enquiries": total_enquiries,
+            "pending_review_count": pending_review_count,
+            "dispatched_count": dispatched_count,
+            "quarantined_count": quarantined_count,
+            "pending_dups_count": pending_dups_count
+        }
+    )
 
 @app.get("/health")
 def health_check():
@@ -78,6 +138,151 @@ def health_check():
         "audit_logs_count": audit_cnt,
         "pending_duplicates_count": dup_cnt
     }
+
+@app.get("/api/enquiries")
+def list_enquiries():
+    conn = get_db_connection(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM enquiries ORDER BY id ASC")
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+@app.get("/api/enquiries/{enquiry_id}")
+def get_enquiry_detail(enquiry_id: str):
+    conn = get_db_connection(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM enquiries WHERE id = ?", (enquiry_id,))
+    enq = cursor.fetchone()
+    if not enq:
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Enquiry {enquiry_id} not found")
+
+    cursor.execute("SELECT filename, content FROM attachments WHERE enquiry_id = ?", (enquiry_id,))
+    attachments = [dict(a) for a in cursor.fetchall()]
+
+    cursor.execute("SELECT * FROM audit_logs WHERE input_id = ? ORDER BY id ASC", (enquiry_id,))
+    logs = [dict(l) for l in cursor.fetchall()]
+
+    data = dict(enq)
+    data["attachments"] = attachments
+    data["audit_trail"] = logs
+    conn.close()
+    return data
+
+@app.post("/api/enquiries/{enquiry_id}/approve")
+def approve_enquiry(enquiry_id: str, req: Optional[ApproveRequest] = None):
+    conn = get_db_connection(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM enquiries WHERE id = ?", (enquiry_id,))
+    enq = cursor.fetchone()
+    if not enq:
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Enquiry {enquiry_id} not found")
+
+    now_ts = datetime.now(timezone.utc).isoformat()
+    draft_to_send = req.draft_response if (req and req.draft_response) else enq["draft_response"]
+
+    # Update enquiry status
+    cursor.execute("""
+        UPDATE enquiries
+        SET status = 'APPROVED_DISPATCHED',
+            draft_response = ?,
+            updated_at = ?
+        WHERE id = ?
+    """, (draft_to_send, now_ts, enquiry_id))
+
+    # Create simulated dispatch record
+    recipient = enq["sender_email"] or "internal"
+    subj = f"Re: {enq['subject'] or 'Enquiry'}"
+    cursor.execute("""
+        INSERT INTO dispatched_messages (enquiry_id, recipient, subject, body, dispatched_at, status)
+        VALUES (?, ?, ?, ?, ?, 'DISPATCHED_TO_EXTERNAL')
+    """, (enquiry_id, recipient, subj, draft_to_send or "", now_ts))
+
+    conn.commit()
+
+    # Log audit entry
+    log_audit(
+        input_id=enquiry_id,
+        step="human_decision",
+        output={"status": "approved", "dispatched": True, "recipient": recipient},
+        reasoning="Human reviewer approved outbound communication / dispatch.",
+        status="approved",
+        model_used="n/a",
+        db_path=DATABASE_PATH,
+        conn=conn
+    )
+
+    conn.close()
+    return {"status": "APPROVED_DISPATCHED", "enquiry_id": enquiry_id, "dispatched": True}
+
+@app.post("/api/enquiries/{enquiry_id}/edit")
+def edit_enquiry_draft(enquiry_id: str, req: EditDraftRequest):
+    conn = get_db_connection(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM enquiries WHERE id = ?", (enquiry_id,))
+    enq = cursor.fetchone()
+    if not enq:
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Enquiry {enquiry_id} not found")
+
+    now_ts = datetime.now(timezone.utc).isoformat()
+    cursor.execute("""
+        UPDATE enquiries
+        SET draft_response = ?,
+            updated_at = ?
+        WHERE id = ?
+    """, (req.draft_response, now_ts, enquiry_id))
+    conn.commit()
+
+    log_audit(
+        input_id=enquiry_id,
+        step="human_edit_draft",
+        output={"draft_length": len(req.draft_response)},
+        reasoning="Human reviewer modified draft response before approval.",
+        status="success",
+        model_used="n/a",
+        db_path=DATABASE_PATH,
+        conn=conn
+    )
+
+    conn.close()
+    return {"status": "PENDING_REVIEW", "enquiry_id": enquiry_id, "draft_response": req.draft_response}
+
+@app.post("/api/enquiries/{enquiry_id}/reject")
+def reject_enquiry(enquiry_id: str, req: RejectRequest):
+    conn = get_db_connection(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM enquiries WHERE id = ?", (enquiry_id,))
+    enq = cursor.fetchone()
+    if not enq:
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Enquiry {enquiry_id} not found")
+
+    now_ts = datetime.now(timezone.utc).isoformat()
+    cursor.execute("""
+        UPDATE enquiries
+        SET status = 'REJECTED',
+            rejection_feedback = ?,
+            updated_at = ?
+        WHERE id = ?
+    """, (req.feedback, now_ts, enquiry_id))
+    conn.commit()
+
+    log_audit(
+        input_id=enquiry_id,
+        step="human_decision",
+        output={"feedback": req.feedback, "draft_cancelled": True},
+        reasoning=req.feedback,
+        status="rejected",
+        model_used="n/a",
+        db_path=DATABASE_PATH,
+        conn=conn
+    )
+
+    conn.close()
+    return {"status": "REJECTED", "enquiry_id": enquiry_id, "feedback": req.feedback}
 
 @app.get("/api/reviews")
 def list_duplicate_reviews(status: Optional[str] = None):
@@ -134,4 +339,5 @@ def api_keep_separate(review_id: int, req: Optional[KeepSeparateRequest] = None)
 def api_resolve_all_entities():
     resolve_all_entities(db_path=DATABASE_PATH)
     return {"status": "ok", "message": "All entities resolved."}
+
 

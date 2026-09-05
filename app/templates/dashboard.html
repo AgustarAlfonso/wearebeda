@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BEDA — Automated Business Enquiry Handling System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --bg-surface: #0f172a;
+      --bg-surface-elevated: #1e293b;
+      --bg-surface-hover: #26354a;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-focus: #38bdf8;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --accent-cyan: #38bdf8;
+      --accent-blue: #2563eb;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-purple: #a855f7;
+      
+      --font-main: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-main);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Navigation */
+    header {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #fff;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+    }
+
+    .brand-text h1 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-text span {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--accent-emerald);
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+      box-shadow: 0 0 8px var(--accent-emerald);
+    }
+
+    /* Container */
+    main {
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem;
+      flex: 1;
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .metric-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .metric-title {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+    }
+
+    .metric-value {
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    /* Tabs & Filters */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge-count {
+      background: var(--bg-surface-elevated);
+      color: var(--accent-cyan);
+      font-size: 0.8rem;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 8px;
+      background: var(--bg-surface);
+      padding: 4px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+    }
+
+    .filter-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover {
+      color: var(--text-main);
+    }
+
+    .filter-btn.active {
+      background: var(--bg-surface-elevated);
+      color: var(--accent-cyan);
+    }
+
+    /* Table */
+    .table-container {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      margin-bottom: 2.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th {
+      background: rgba(30, 41, 59, 0.6);
+      padding: 12px 16px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.9rem;
+      vertical-align: middle;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .badge-sales_lead { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .badge-support { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-insufficient_info { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-internal_alert { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+    .badge-junk { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.3); }
+
+    .badge-PENDING_REVIEW { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-APPROVED_DISPATCHED { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-REJECTED { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+    .badge-QUARANTINED { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.3); }
+    .badge-INGESTED { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+
+    .uncertainty-flag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      margin-left: 6px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #ffffff;
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #0369a1, #075985);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    }
+
+    .btn-success {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #34d399;
+    }
+    .btn-success:hover {
+      background: rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-danger {
+      background: rgba(244, 63, 94, 0.2);
+      border-color: rgba(244, 63, 94, 0.4);
+      color: #fb7185;
+    }
+    .btn-danger:hover {
+      background: rgba(244, 63, 94, 0.3);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border-color: var(--border-color);
+      color: var(--text-muted);
+    }
+    .btn-outline:hover {
+      background: var(--bg-surface-elevated);
+      color: var(--text-main);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Duplicate Review Cards */
+    .duplicates-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .dup-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .dup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .dup-level {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .dup-desc {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .dup-claim-box {
+      background: rgba(30, 41, 59, 0.7);
+      border-left: 3px solid var(--accent-amber);
+      padding: 10px 12px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: 0.82rem;
+      color: #e2e8f0;
+      font-family: var(--font-mono);
+    }
+
+    .dup-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: auto;
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 2rem;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-container {
+      background: var(--bg-surface);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-lg);
+      max-width: 1100px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-lg);
+      animation: modalSlideIn 0.25s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+    }
+    .modal-close:hover {
+      color: var(--text-main);
+    }
+
+    .modal-body {
+      padding: 1.75rem;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 1.75rem;
+    }
+
+    @media (max-width: 860px) {
+      .modal-body {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .modal-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .panel-section-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    .info-card {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      font-size: 0.88rem;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .info-row:last-child {
+      border-bottom: none;
+    }
+    .info-label {
+      color: var(--text-muted);
+    }
+    .info-value {
+      font-weight: 500;
+      color: var(--text-main);
+      text-align: right;
+    }
+
+    /* Attachment & Draft Editor */
+    .attachment-viewer {
+      background: #050811;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+      color: #93c5fd;
+    }
+
+    .draft-textarea {
+      width: 100%;
+      height: 250px;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 12px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+    .draft-textarea:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+
+    .modal-footer {
+      padding: 1.25rem 1.75rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 12px 20px;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-lg);
+      font-size: 0.9rem;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      z-index: 200;
+      animation: fadeIn 0.2s;
+    }
+
+    .toast.success { border-color: var(--accent-emerald); }
+    .toast.error { border-color: var(--accent-rose); }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">B</div>
+      <div class="brand-text">
+        <h1>BEDA Enquiry System</h1>
+        <span>Human-in-the-loop Review Gate</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="status-indicator">
+        <div class="status-dot"></div>
+        <span>Pipeline Operational</span>
+      </div>
+      <button class="btn btn-outline" onclick="location.reload()">Refresh Queue</button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Metrics Grid -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <span class="metric-title">Total Ingested</span>
+        <span class="metric-value">{{ total_enquiries }}</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-title">Pending Human Review</span>
+        <span class="metric-value" style="color: var(--accent-amber);">{{ pending_review_count }}</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-title">Approved & Dispatched</span>
+        <span class="metric-value" style="color: var(--accent-emerald);">{{ dispatched_count }}</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-title">Quarantined (Junk)</span>
+        <span class="metric-value" style="color: var(--text-dim);">{{ quarantined_count }}</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-title">Duplicate Reviews</span>
+        <span class="metric-value" style="color: var(--accent-cyan);">{{ pending_dups_count }}</span>
+      </div>
+    </div>
+
+    <!-- Section 1: Enquiries Queue -->
+    <div class="section-header">
+      <div class="section-title">
+        <span>Enquiry Queue</span>
+        <span class="badge-count">{{ enquiries|length }} cases</span>
+      </div>
+      <div class="filter-group">
+        <button class="filter-btn active" onclick="filterTable('ALL')">All</button>
+        <button class="filter-btn" onclick="filterTable('PENDING_REVIEW')">Pending</button>
+        <button class="filter-btn" onclick="filterTable('APPROVED_DISPATCHED')">Dispatched</button>
+        <button class="filter-btn" onclick="filterTable('QUARANTINED')">Quarantined</button>
+        <button class="filter-btn" onclick="filterTable('REJECTED')">Rejected</button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Sender & Channel</th>
+            <th>Subject</th>
+            <th>Category</th>
+            <th>Confidence</th>
+            <th>Assigned Owner</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="enquiryTableBody">
+          {% for enq in enquiries %}
+          <tr data-status="{{ enq.status }}" data-id="{{ enq.id }}">
+            <td style="font-family: var(--font-mono); font-weight: 600; color: var(--accent-cyan);">{{ enq.id }}</td>
+            <td>
+              <div style="font-weight: 500;">{{ enq.sender_name or 'Unknown Contact' }}</div>
+              <div style="font-size: 0.78rem; color: var(--text-dim);">{{ enq.sender_email }} ({{ enq.channel }})</div>
+            </td>
+            <td>
+              <div style="max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ enq.subject }}">
+                {{ enq.subject }}
+              </div>
+            </td>
+            <td>
+              {% if enq.category %}
+                <span class="badge badge-{{ enq.category }}">{{ enq.category }}</span>
+              {% else %}
+                <span class="badge badge-junk">Unclassified</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if enq.confidence %}
+                <span style="font-family: var(--font-mono); font-size: 0.85rem;">{{ (enq.confidence * 100)|round|int }}%</span>
+              {% else %}
+                <span style="color: var(--text-dim);">-</span>
+              {% endif %}
+            </td>
+            <td>
+              <div>
+                {% if enq.assigned_owner_list %}
+                  {% for owner in enq.assigned_owner_list %}
+                    <span style="display: inline-block; background: var(--bg-surface-elevated); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; margin-right: 4px;">{{ owner }}</span>
+                  {% endfor %}
+                {% elif enq.category == 'junk' %}
+                  <span style="color: var(--text-dim); font-size: 0.8rem;">None (Quarantined)</span>
+                {% else %}
+                  <span style="color: var(--accent-rose); font-size: 0.8rem;">Zero Candidates</span>
+                {% endif %}
+                
+                {% if enq.needs_confirmation %}
+                  <span class="uncertainty-flag" title="Uncertainty preserved: Requires human confirmation">Confirmation Needed</span>
+                {% endif %}
+              </div>
+            </td>
+            <td>
+              <span class="badge badge-{{ enq.status }}">{{ enq.status }}</span>
+            </td>
+            <td>
+              <div style="display: flex; gap: 6px;">
+                <button class="btn btn-primary" onclick="openReviewModal('{{ enq.id }}')">
+                  Inspect & Review
+                </button>
+                {% if enq.status == 'PENDING_REVIEW' %}
+                  <button class="btn btn-success" onclick="quickApprove('{{ enq.id }}')">Approve</button>
+                  <button class="btn btn-danger" onclick="openRejectModal('{{ enq.id }}')">Reject</button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Section 2: 3-Level Duplicate & Contact Entity Resolution Queue -->
+    <div class="section-header">
+      <div class="section-title">
+        <span>3-Level Entity Resolution & Deduplication Queue</span>
+        <span class="badge-count">{{ duplicate_reviews|length }} review items</span>
+      </div>
+    </div>
+
+    {% if duplicate_reviews|length == 0 %}
+      <div class="info-card" style="margin-bottom: 2rem; text-align: center; color: var(--text-dim);">
+        No pending duplicate or entity resolution reviews found.
+      </div>
+    {% else %}
+      <div class="duplicates-grid">
+        {% for dup in duplicate_reviews %}
+        <div class="dup-card" id="dup-card-{{ dup.id }}">
+          <div class="dup-header">
+            <div>
+              <span class="dup-level">{{ dup.match_level }}</span>
+              <span style="font-family: var(--font-mono); font-size: 0.85rem; margin-left: 8px; font-weight: 600;">
+                {{ dup.source_id }} &rarr; {{ dup.target_id }}
+              </span>
+            </div>
+            <span class="badge badge-{{ dup.status }}">{{ dup.status }}</span>
+          </div>
+
+          <div class="dup-desc">{{ dup.description }}</div>
+
+          {% if dup.unverified_claim %}
+            <div class="dup-claim-box">
+              <strong>Unverified Suggestion:</strong><br>
+              {{ dup.unverified_claim }}
+            </div>
+          {% endif %}
+
+          <div class="dup-actions">
+            {% if dup.status == 'PENDING' %}
+              <button class="btn btn-primary" onclick="resolveReview('{{ dup.id }}', 'merge')">
+                Merge as Duplicate
+              </button>
+              {% if dup.unverified_claim %}
+                <button class="btn btn-success" onclick="resolveReview('{{ dup.id }}', 'update-field')">
+                  Update CRM Field
+                </button>
+              {% endif %}
+              <button class="btn btn-outline" onclick="resolveReview('{{ dup.id }}', 'keep-separate')">
+                Keep Separate
+              </button>
+            {% else %}
+              <span style="font-size: 0.85rem; color: var(--text-dim); font-style: italic;">
+                Resolved ({{ dup.status }})
+              </span>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </main>
+
+  <!-- Detail & Review Modal -->
+  <div class="modal-overlay" id="reviewModal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title" id="modalCaseTitle">Enquiry Review & Outbound Gate</div>
+        <button class="modal-close" onclick="closeReviewModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Left Column: Context & Metadata -->
+        <div class="modal-panel">
+          <div>
+            <div class="panel-section-title">Case Information</div>
+            <div class="info-card">
+              <div class="info-row">
+                <span class="info-label">Sender</span>
+                <span class="info-value" id="modalSender">Amelia Grant</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Email</span>
+                <span class="info-value" id="modalEmail">amelia.grant@humelogistics.example</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Channel</span>
+                <span class="info-value" id="modalChannel">Email</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Category</span>
+                <span class="info-value" id="modalCategory">sales_lead</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Confidence</span>
+                <span class="info-value" id="modalConfidence">95%</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Assigned Owner</span>
+                <span class="info-value" id="modalOwner">Matt Cooper</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="panel-section-title">Extraction Reasoning</div>
+            <div class="info-card" id="modalReasoning" style="color: var(--text-muted); font-size: 0.85rem;">
+              Evaluating...
+            </div>
+          </div>
+
+          <div id="modalAttachmentSection" style="display: none;">
+            <div class="panel-section-title" id="modalAttachmentTitle">Attachment Document</div>
+            <div class="attachment-viewer" id="modalAttachmentContent"></div>
+          </div>
+        </div>
+
+        <!-- Right Column: Grounded Draft Editor -->
+        <div class="modal-panel">
+          <div>
+            <div class="panel-section-title" id="draftSectionTitle">Grounded Response Draft (Claude Sonnet 5)</div>
+            <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px;">
+              Verify all quoted figures (kWh, bill amounts, PO numbers). You may edit the text prior to external dispatch.
+            </p>
+            <textarea class="draft-textarea" id="modalDraftText"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeReviewModal()">Cancel</button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-danger" id="modalRejectBtn" onclick="triggerRejectFromModal()">Reject Enquiry</button>
+          <button class="btn btn-outline" onclick="saveDraftEdits()">Save Draft</button>
+          <button class="btn btn-success" id="modalApproveBtn" onclick="approveFromModal()">Approve & Dispatch</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rejection Modal -->
+  <div class="modal-overlay" id="rejectModal">
+    <div class="modal-container" style="max-width: 500px;">
+      <div class="modal-header">
+        <div class="modal-title">Reject Enquiry</div>
+        <button class="modal-close" onclick="closeRejectModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="grid-template-columns: 1fr;">
+        <div class="modal-panel">
+          <p style="font-size: 0.85rem; color: var(--text-muted);">
+            Please state the feedback reason for rejecting this enquiry. This reason will be permanently recorded in the immutable audit trail.
+          </p>
+          <textarea class="draft-textarea" id="rejectFeedbackText" style="height: 120px;" placeholder="e.g. Duplicate enquiry, outside service area, unverified contact..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeRejectModal()">Cancel</button>
+        <button class="btn btn-danger" onclick="submitRejection()">Confirm Rejection</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div class="toast" id="toast">Operation completed successfully.</div>
+
+  <!-- Client-Side Scripts -->
+  <script>
+    let activeEnquiryId = null;
+
+    function showToast(message, isError = false) {
+      const t = document.getElementById('toast');
+      t.innerText = message;
+      t.className = isError ? 'toast error' : 'toast success';
+      t.style.display = 'flex';
+      setTimeout(() => { t.style.display = 'none'; }, 4000);
+    }
+
+    function filterTable(status) {
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      const rows = document.querySelectorAll('#enquiryTableBody tr');
+      rows.forEach(row => {
+        const rowStatus = row.getAttribute('data-status');
+        if (status === 'ALL' || rowStatus === status) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+
+    async function openReviewModal(enquiryId) {
+      activeEnquiryId = enquiryId;
+      try {
+        const res = await fetch(`/api/enquiries/${enquiryId}`);
+        if (!res.ok) throw new Error("Failed to load enquiry details");
+        const data = await res.json();
+
+        document.getElementById('modalCaseTitle').innerText = `${data.id} — Review & Human Gate`;
+        document.getElementById('modalSender').innerText = data.sender_name || 'N/A';
+        document.getElementById('modalEmail').innerText = data.sender_email || 'N/A';
+        document.getElementById('modalChannel').innerText = data.channel || 'Email';
+        document.getElementById('modalCategory').innerText = data.category || 'Unclassified';
+        document.getElementById('modalConfidence').innerText = data.confidence ? `${Math.round(data.confidence * 100)}%` : 'N/A';
+        
+        const owners = data.assigned_owner ? JSON.parse(data.assigned_owner) : [];
+        document.getElementById('modalOwner').innerText = owners.length ? owners.join(', ') : 'None';
+        document.getElementById('modalReasoning').innerText = data.reasoning || (data.extracted_fields ? JSON.parse(data.extracted_fields).request_summary : 'No reasoning recorded');
+
+        // Attachment Viewer
+        const attSec = document.getElementById('modalAttachmentSection');
+        if (data.attachments && data.attachments.length > 0) {
+          attSec.style.display = 'block';
+          document.getElementById('modalAttachmentTitle').innerText = `Attachment: ${data.attachments[0].filename}`;
+          document.getElementById('modalAttachmentContent').innerText = data.attachments[0].content;
+        } else {
+          attSec.style.display = 'none';
+        }
+
+        // Draft
+        document.getElementById('modalDraftText').value = data.draft_response || (data.category === 'junk' ? '[QUARANTINED - NO DRAFT CREATED]' : '');
+        
+        if (data.category === 'internal_alert') {
+          document.getElementById('draftSectionTitle').innerText = 'Internal Incident Ticket (Ali Pratama)';
+        } else {
+          document.getElementById('draftSectionTitle').innerText = 'Grounded Response Draft (Claude Sonnet 5)';
+        }
+
+        document.getElementById('reviewModal').classList.add('active');
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    function closeReviewModal() {
+      document.getElementById('reviewModal').classList.remove('active');
+      activeEnquiryId = null;
+    }
+
+    async function saveDraftEdits() {
+      if (!activeEnquiryId) return;
+      const draft = document.getElementById('modalDraftText').value;
+      try {
+        const res = await fetch(`/api/enquiries/${activeEnquiryId}/edit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ draft_response: draft })
+        });
+        if (!res.ok) throw new Error("Failed to save draft edits");
+        showToast("Draft updated successfully.");
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    async function approveFromModal() {
+      if (!activeEnquiryId) return;
+      const draft = document.getElementById('modalDraftText').value;
+      try {
+        const res = await fetch(`/api/enquiries/${activeEnquiryId}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ draft_response: draft })
+        });
+        if (!res.ok) throw new Error("Approval failed");
+        showToast(`Enquiry ${activeEnquiryId} approved and simulated external dispatch sent!`);
+        closeReviewModal();
+        setTimeout(() => location.reload(), 1000);
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    async function quickApprove(enquiryId) {
+      try {
+        const res = await fetch(`/api/enquiries/${enquiryId}/approve`, { method: 'POST' });
+        if (!res.ok) throw new Error("Approval failed");
+        showToast(`Enquiry ${enquiryId} approved and dispatched.`);
+        setTimeout(() => location.reload(), 1000);
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    function openRejectModal(enquiryId) {
+      activeEnquiryId = enquiryId;
+      document.getElementById('rejectFeedbackText').value = '';
+      document.getElementById('rejectModal').classList.add('active');
+    }
+
+    function triggerRejectFromModal() {
+      document.getElementById('reviewModal').classList.remove('active');
+      document.getElementById('rejectModal').classList.add('active');
+    }
+
+    function closeRejectModal() {
+      document.getElementById('rejectModal').classList.remove('active');
+    }
+
+    async function submitRejection() {
+      if (!activeEnquiryId) return;
+      const feedback = document.getElementById('rejectFeedbackText').value.trim();
+      if (!feedback) {
+        alert("Please provide rejection feedback.");
+        return;
+      }
+      try {
+        const res = await fetch(`/api/enquiries/${activeEnquiryId}/reject`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ feedback: feedback })
+        });
+        if (!res.ok) throw new Error("Rejection failed");
+        showToast(`Enquiry ${activeEnquiryId} marked as REJECTED.`);
+        closeRejectModal();
+        setTimeout(() => location.reload(), 1000);
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+
+    async function resolveReview(reviewId, action) {
+      try {
+        let endpoint = `/api/reviews/${reviewId}/${action}`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        if (!res.ok) throw new Error("Action failed");
+        showToast(`Duplicate review ${reviewId} successfully set to ${action.toUpperCase()}`);
+        setTimeout(() => location.reload(), 1000);
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    }
+  </script>
+</body>
+</html>

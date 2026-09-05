@@ -14,14 +14,14 @@ Enforces the inviolable rule: no external message dispatch or CRM mutation witho
 
 **Blocked by:** 05 — 3-Level Entity Resolution & Actionable Review Operations
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] FastAPI serves Jinja2 review dashboard at `/` with clean responsive layout, status badges, and filtering.
-- [ ] Detail view presents all metadata, confidence scores, candidate staff owners, and uncertainty flags.
-- [ ] Attachment Viewer renders contents of 01_hume_energy_bill.txt, 02_northbank_site_notes.txt, and 03_greenfields_invoice_query.txt side-by-side with drafts.
-- [ ] Duplicate resolution interface enables `Merge as Duplicate`, `Update CRM Field`, and `Keep Separate` actions.
-- [ ] `Approve` button triggers simulated outbound dispatch (`DISPATCHED_TO_EXTERNAL`), persists to `dispatched_messages`, applies CRM updates, and appends `step='human_decision', status='approved'` audit entry.
-- [ ] `Edit` button allows modification of draft body before approval.
-- [ ] `Reject` button opens a feedback modal, marks enquiry as `REJECTED`, cancels draft, and appends `step='human_decision', status='rejected', reasoning=<feedback>` audit entry.
-- [ ] Autonomous dispatch without human review is strictly prevented.
-- [ ] Automated HTTP endpoint tests verify approval, edit, and rejection flows.
+- [x] FastAPI serves Jinja2 review dashboard at `/` with clean responsive layout, status badges, and filtering.
+- [x] Detail view presents all metadata, confidence scores, candidate staff owners, and uncertainty flags.
+- [x] Attachment Viewer renders contents of 01_hume_energy_bill.txt, 02_northbank_site_notes.txt, and 03_greenfields_invoice_query.txt side-by-side with drafts.
+- [x] Duplicate resolution interface enables `Merge as Duplicate`, `Update CRM Field`, and `Keep Separate` actions.
+- [x] `Approve` button triggers simulated outbound dispatch (`DISPATCHED_TO_EXTERNAL`), persists to `dispatched_messages`, applies CRM updates, and appends `step='human_decision', status='approved'` audit entry.
+- [x] `Edit` button allows modification of draft body before approval.
+- [x] `Reject` button opens a feedback modal, marks enquiry as `REJECTED`, cancels draft, and appends `step='human_decision', status='rejected', reasoning=<feedback>` audit entry.
+- [x] Autonomous dispatch without human review is strictly prevented.
+- [x] Automated HTTP endpoint tests verify approval, edit, and rejection flows.
