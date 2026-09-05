@@ -86,6 +86,10 @@ def get_dashboard(request: Request):
     cursor.execute("SELECT * FROM duplicate_reviews ORDER BY id ASC")
     dups = [dict(r) for r in cursor.fetchall()]
 
+    cursor.execute("SELECT * FROM audit_logs ORDER BY id DESC")
+    raw_logs = cursor.fetchall()
+    audit_logs = [dict(r) for r in raw_logs]
+
     total_enquiries = len(enquiries)
     pending_review_count = sum(1 for e in enquiries if e.get("status") == "PENDING_REVIEW")
     dispatched_count = sum(1 for e in enquiries if e.get("status") == "APPROVED_DISPATCHED")
@@ -100,6 +104,7 @@ def get_dashboard(request: Request):
         context={
             "enquiries": enquiries,
             "duplicate_reviews": dups,
+            "audit_logs": audit_logs,
             "total_enquiries": total_enquiries,
             "pending_review_count": pending_review_count,
             "dispatched_count": dispatched_count,
@@ -107,6 +112,33 @@ def get_dashboard(request: Request):
             "pending_dups_count": pending_dups_count
         }
     )
+
+@app.get("/api/audit-logs")
+def list_audit_logs(
+    input_id: Optional[str] = None,
+    step: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: int = 150
+):
+    conn = get_db_connection(DATABASE_PATH)
+    cursor = conn.cursor()
+    query = "SELECT * FROM audit_logs WHERE 1=1"
+    params: List[Any] = []
+    if input_id:
+        query += " AND input_id = ?"
+        params.append(input_id)
+    if step:
+        query += " AND step = ?"
+        params.append(step)
+    if status:
+        query += " AND status = ?"
+        params.append(status)
+    query += " ORDER BY id DESC LIMIT ?"
+    params.append(limit)
+    cursor.execute(query, params)
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
 
 @app.get("/health")
 def health_check():

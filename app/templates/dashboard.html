@@ -98,6 +98,109 @@
       letter-spacing: 0.05em;
     }
 
+    /* Top Navigation Tabs */
+    .nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.7);
+      padding: 4px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+    }
+
+    .nav-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+
+    .nav-tab:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .nav-tab.active {
+      background: var(--bg-surface-elevated);
+      color: var(--accent-cyan);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .nav-badge {
+      font-size: 0.72rem;
+      background: rgba(56, 189, 248, 0.18);
+      color: var(--accent-cyan);
+      padding: 2px 7px;
+      border-radius: 9999px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+    }
+
+    .search-input {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      padding: 7px 12px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      min-width: 240px;
+    }
+    .search-input:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+
+    .code-json-box {
+      background: #050811;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      white-space: pre-wrap;
+      max-height: 280px;
+      overflow-y: auto;
+      color: #38bdf8;
+    }
+
+    .badge-step {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(148, 163, 184, 0.15);
+      color: #cbd5e1;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    .badge-model {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(168, 85, 247, 0.15);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    .badge-success { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-needs_review { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+    .badge-approved { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .badge-rejected { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+
     .header-actions {
       display: flex;
       align-items: center;
@@ -626,13 +729,23 @@
         <span>Human-in-the-loop Review Gate</span>
       </div>
     </div>
+    <!-- Navigation View Tabs -->
+    <nav class="nav-tabs">
+      <button class="nav-tab active" id="navTabEnquiries" onclick="switchView('enquiries')">
+        📋 Enquiries & Reviews
+      </button>
+      <button class="nav-tab" id="navTabLogs" onclick="switchView('logs')">
+        📜 Audit Logs <span class="nav-badge" id="logsCountBadge">{{ audit_logs|length }}</span>
+      </button>
+    </nav>
+
     <div class="header-actions">
       <div class="status-indicator">
         <div class="status-dot"></div>
         <span>Pipeline Ready</span>
       </div>
       <button class="btn btn-primary" id="btnProcessAll" onclick="triggerProcessAll()">
-        ⚡ Process All with Gemini 3.8 Flash
+        ⚡ Process All Live
       </button>
       <button class="btn btn-outline" style="border-color: rgba(244, 63, 94, 0.5); color: var(--accent-rose);" id="btnResetDB" onclick="triggerResetDatabase()" title="Reset database to initial raw ingested state">
         🔄 Reset System
@@ -643,6 +756,8 @@
 
   <!-- Main Content -->
   <main>
+    <!-- View 1: Enquiries & Review -->
+    <div id="viewEnquiries">
     <!-- Metrics Grid -->
     <div class="metrics-grid">
       <div class="metric-card">
@@ -823,7 +938,124 @@
         {% endfor %}
       </div>
     {% endif %}
-  </main>
+    </div>
+    <!-- /viewEnquiries -->
+
+    <!-- View 2: Audit & System Logs -->
+    <div id="viewLogs" style="display: none;">
+      <!-- Logs Metrics Grid -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <span class="metric-title">Total Audit Entries</span>
+          <span class="metric-value" id="logStatTotal">{{ audit_logs|length }}</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-title">Successful Operations</span>
+          <span class="metric-value" style="color: var(--accent-emerald);" id="logStatSuccess">
+            {{ audit_logs | selectattr("status", "equalto", "success") | list | length + audit_logs | selectattr("status", "equalto", "approved") | list | length }}
+          </span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-title">Flagged / Needs Review</span>
+          <span class="metric-value" style="color: var(--accent-rose);" id="logStatReview">
+            {{ audit_logs | selectattr("status", "equalto", "needs_review") | list | length }}
+          </span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-title">Active AI Models Cascade</span>
+          <span class="metric-value" style="color: var(--accent-purple); font-size: 1.1rem; line-height: 1.4;">
+            Gemini 3.6 / 3.7 Flash
+          </span>
+        </div>
+      </div>
+
+      <!-- Section Header with Search and Filter -->
+      <div class="section-header" style="margin-top: 1.75rem; flex-wrap: wrap; gap: 12px;">
+        <div class="section-title">
+          <span>Immutable Audit Trail & Telemetry</span>
+          <span class="badge-count" id="visibleLogsCount">{{ audit_logs|length }} records</span>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <input type="text" id="logSearchInput" class="search-input" placeholder="🔍 Search ID, Model, Reasoning..." oninput="filterLogs()">
+          <div class="filter-group">
+            <button class="filter-btn active log-status-btn" onclick="filterLogsByStatus('ALL', this)">All Status</button>
+            <button class="filter-btn log-status-btn" onclick="filterLogsByStatus('success', this)">Success</button>
+            <button class="filter-btn log-status-btn" onclick="filterLogsByStatus('needs_review', this)">Needs Review</button>
+            <button class="filter-btn log-status-btn" onclick="filterLogsByStatus('approved', this)">Approved</button>
+            <button class="filter-btn log-status-btn" onclick="filterLogsByStatus('rejected', this)">Rejected</button>
+          </div>
+          <button class="btn btn-outline" onclick="fetchLogsLive()">
+            🔄 Live Refresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Pipeline Step Filter Chips -->
+      <div style="display: flex; gap: 8px; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center;">
+        <span style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; font-weight: 600;">Pipeline Step:</span>
+        <button class="filter-btn active log-step-btn" style="border: 1px solid var(--border-color);" onclick="filterLogsByStep('ALL', this)">All Steps</button>
+        <button class="filter-btn log-step-btn" style="border: 1px solid var(--border-color);" onclick="filterLogsByStep('classify', this)">classify</button>
+        <button class="filter-btn log-step-btn" style="border: 1px solid var(--border-color);" onclick="filterLogsByStep('draft_response', this)">draft_response</button>
+        <button class="filter-btn log-step-btn" style="border: 1px solid var(--border-color);" onclick="filterLogsByStep('dedupe_check', this)">dedupe_check</button>
+        <button class="filter-btn log-step-btn" style="border: 1px solid var(--border-color);" onclick="filterLogsByStep('entity_resolution', this)">entity_resolution</button>
+        <button class="filter-btn log-step-btn" style="border: 1px solid var(--border-color);" onclick="filterLogsByStep('human_decision', this)">human_decision</button>
+      </div>
+
+      <!-- Audit Table -->
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 70px;">ID</th>
+              <th style="width: 170px;">Timestamp</th>
+              <th style="width: 100px;">Input ID</th>
+              <th style="width: 140px;">Pipeline Step</th>
+              <th style="width: 160px;">Model Used</th>
+              <th style="width: 120px;">Status</th>
+              <th>Reasoning / Output Summary</th>
+              <th style="width: 100px; text-align: center;">Details</th>
+            </tr>
+          </thead>
+          <tbody id="auditLogsTableBody">
+            {% for log in audit_logs %}
+            <tr class="log-row"
+                data-id="{{ log.id }}"
+                data-status="{{ log.status }}"
+                data-step="{{ log.step }}"
+                data-input="{{ log.input_id }}"
+                data-model="{{ log.model_used }}"
+                data-time="{{ log.timestamp }}"
+                data-reasoning="{{ log.reasoning|escape }}"
+                data-output="{{ log.output|escape }}">
+              <td style="font-family: var(--font-mono); font-weight: 600; color: var(--text-dim);">#{{ log.id }}</td>
+              <td style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted);">{{ log.timestamp[:19].replace('T', ' ') }}</td>
+              <td>
+                <span class="badge" style="background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3); color: var(--accent-cyan); font-family: var(--font-mono);">
+                  {{ log.input_id }}
+                </span>
+              </td>
+              <td><span class="badge-step">{{ log.step }}</span></td>
+              <td><span class="badge-model">{{ log.model_used }}</span></td>
+              <td>
+                <span class="badge badge-{{ log.status }}">
+                  {{ log.status }}
+                </span>
+              </td>
+              <td style="color: var(--text-muted); font-size: 0.84rem; max-width: 420px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ log.reasoning }}">
+                {{ log.reasoning }}
+              </td>
+              <td style="text-align: center;">
+                <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.78rem;" onclick="openLogDetailModal({{ log.id }})">
+                  Inspect
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- /viewLogs -->
 
   <!-- Detail & Review Modal -->
   <div class="modal-overlay" id="reviewModal">
@@ -920,6 +1152,58 @@
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="closeRejectModal()">Cancel</button>
         <button class="btn btn-danger" onclick="submitRejection()">Confirm Rejection</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audit Log Detail Modal -->
+  <div class="modal-overlay" id="logDetailModal">
+    <div class="modal-container" style="max-width: 760px;">
+      <div class="modal-header">
+        <div class="modal-title" id="logModalTitle">Audit Log Entry Details</div>
+        <button class="modal-close" onclick="closeLogModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="grid-template-columns: 1fr;">
+        <div class="modal-panel">
+          <div class="info-card">
+            <div class="info-row">
+              <span class="info-label">Log ID & Input</span>
+              <span class="info-value" id="logModalMeta" style="font-family: var(--font-mono);">-</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Timestamp</span>
+              <span class="info-value" id="logModalTime" style="font-family: var(--font-mono);">-</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Pipeline Step</span>
+              <span class="info-value" id="logModalStep">-</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Model Used</span>
+              <span class="info-value" id="logModalModel">-</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Status</span>
+              <span class="info-value" id="logModalStatus">-</span>
+            </div>
+          </div>
+
+          <div>
+            <div class="panel-section-title">Reasoning / Error Message</div>
+            <div class="info-card" id="logModalReasoning" style="font-size: 0.88rem; color: var(--text-main); white-space: pre-wrap; line-height: 1.5;"></div>
+          </div>
+
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span class="panel-section-title" style="margin: 0;">Output Data Payload (JSON)</span>
+              <button class="btn btn-outline" style="padding: 3px 8px; font-size: 0.75rem;" onclick="copyLogJSON()">📋 Copy JSON</button>
+            </div>
+            <pre class="code-json-box" id="logModalOutput"></pre>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeLogModal()">Close</button>
       </div>
     </div>
   </div>
@@ -1163,6 +1447,185 @@
           btn.innerHTML = originalText;
           btn.disabled = false;
         }
+      }
+    }
+
+    // View Switching Logic (Enquiries vs Audit Logs)
+    let currentView = 'enquiries';
+    let selectedLogStatus = 'ALL';
+    let selectedLogStep = 'ALL';
+
+    function switchView(viewName) {
+      currentView = viewName;
+      const viewEnq = document.getElementById('viewEnquiries');
+      const viewLogs = document.getElementById('viewLogs');
+      const tabEnq = document.getElementById('navTabEnquiries');
+      const tabLogs = document.getElementById('navTabLogs');
+
+      if (viewName === 'enquiries') {
+        viewEnq.style.display = 'block';
+        viewLogs.style.display = 'none';
+        tabEnq.classList.add('active');
+        tabLogs.classList.remove('active');
+      } else {
+        viewEnq.style.display = 'none';
+        viewLogs.style.display = 'block';
+        tabEnq.classList.remove('active');
+        tabLogs.classList.add('active');
+      }
+    }
+
+    function filterLogsByStatus(status, btn) {
+      selectedLogStatus = status;
+      document.querySelectorAll('.log-status-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      filterLogs();
+    }
+
+    function filterLogsByStep(step, btn) {
+      selectedLogStep = step;
+      document.querySelectorAll('.log-step-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      filterLogs();
+    }
+
+    function filterLogs() {
+      const q = (document.getElementById('logSearchInput').value || '').toLowerCase().trim();
+      const rows = document.querySelectorAll('#auditLogsTableBody tr.log-row');
+      let visible = 0;
+
+      rows.forEach(row => {
+        const rowStatus = (row.getAttribute('data-status') || '').toLowerCase();
+        const rowStep = (row.getAttribute('data-step') || '').toLowerCase();
+        const rowInput = (row.getAttribute('data-input') || '').toLowerCase();
+        const rowModel = (row.getAttribute('data-model') || '').toLowerCase();
+        const rowReasoning = (row.getAttribute('data-reasoning') || '').toLowerCase();
+
+        const matchStatus = (selectedLogStatus === 'ALL') || (rowStatus === selectedLogStatus.toLowerCase());
+        const matchStep = (selectedLogStep === 'ALL') || (rowStep === selectedLogStep.toLowerCase());
+        const matchSearch = !q || rowInput.includes(q) || rowModel.includes(q) || rowReasoning.includes(q) || rowStep.includes(q);
+
+        if (matchStatus && matchStep && matchSearch) {
+          row.style.display = '';
+          visible++;
+        } else {
+          row.style.display = 'none';
+        }
+      });
+
+      const countBadge = document.getElementById('visibleLogsCount');
+      if (countBadge) countBadge.innerText = `${visible} records`;
+    }
+
+    function openLogDetailModal(logId) {
+      const row = document.querySelector(`#auditLogsTableBody tr[data-id="${logId}"]`);
+      if (!row) return;
+
+      const id = row.getAttribute('data-id');
+      const status = row.getAttribute('data-status');
+      const step = row.getAttribute('data-step');
+      const input = row.getAttribute('data-input');
+      const model = row.getAttribute('data-model');
+      const time = row.getAttribute('data-time') || '';
+      const reasoning = row.getAttribute('data-reasoning');
+      const rawOutput = row.getAttribute('data-output');
+
+      document.getElementById('logModalMeta').innerText = `#${id} (${input})`;
+      document.getElementById('logModalTime').innerText = time.replace('T', ' ');
+      document.getElementById('logModalStep').innerHTML = `<span class="badge-step">${step}</span>`;
+      document.getElementById('logModalModel').innerHTML = `<span class="badge-model">${model}</span>`;
+      document.getElementById('logModalStatus').innerHTML = `<span class="badge badge-${status}">${status}</span>`;
+      document.getElementById('logModalReasoning').innerText = reasoning || 'No reasoning recorded.';
+
+      let formattedJSON = rawOutput;
+      try {
+        const parsed = JSON.parse(rawOutput);
+        formattedJSON = JSON.stringify(parsed, null, 2);
+      } catch (e) {
+        // Keep raw text
+      }
+      document.getElementById('logModalOutput').innerText = formattedJSON || '{}';
+
+      document.getElementById('logDetailModal').classList.add('active');
+    }
+
+    function closeLogModal() {
+      document.getElementById('logDetailModal').classList.remove('active');
+    }
+
+    function copyLogJSON() {
+      const text = document.getElementById('logModalOutput').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast("Output JSON berhasil disalin ke clipboard!");
+      }).catch(() => {
+        showToast("Gagal menyalin JSON.", true);
+      });
+    }
+
+    async function fetchLogsLive() {
+      showToast("Mengambil audit logs terbaru...");
+      try {
+        const res = await fetch('/api/audit-logs?limit=200');
+        if (!res.ok) throw new Error("Gagal mengambil log");
+        const logs = await res.json();
+        
+        const tbody = document.getElementById('auditLogsTableBody');
+        tbody.innerHTML = '';
+
+        logs.forEach(log => {
+          const tr = document.createElement('tr');
+          tr.className = 'log-row';
+          tr.setAttribute('data-id', log.id);
+          tr.setAttribute('data-status', log.status);
+          tr.setAttribute('data-step', log.step);
+          tr.setAttribute('data-input', log.input_id);
+          tr.setAttribute('data-model', log.model_used);
+          tr.setAttribute('data-time', log.timestamp || '');
+          tr.setAttribute('data-reasoning', log.reasoning || '');
+          tr.setAttribute('data-output', typeof log.output === 'string' ? log.output : JSON.stringify(log.output));
+
+          const timeStr = (log.timestamp || '').slice(0, 19).replace('T', ' ');
+          tr.innerHTML = `
+            <td style="font-family: var(--font-mono); font-weight: 600; color: var(--text-dim);">#${log.id}</td>
+            <td style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted);">${timeStr}</td>
+            <td>
+              <span class="badge" style="background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3); color: var(--accent-cyan); font-family: var(--font-mono);">
+                ${log.input_id}
+              </span>
+            </td>
+            <td><span class="badge-step">${log.step}</span></td>
+            <td><span class="badge-model">${log.model_used}</span></td>
+            <td><span class="badge badge-${log.status}">${log.status}</span></td>
+            <td style="color: var(--text-muted); font-size: 0.84rem; max-width: 420px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${log.reasoning || ''}">
+              ${log.reasoning || ''}
+            </td>
+            <td style="text-align: center;">
+              <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.78rem;" onclick="openLogDetailModal(${log.id})">
+                Inspect
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        const badge = document.getElementById('logsCountBadge');
+        if (badge) badge.innerText = logs.length;
+        const total = document.getElementById('logStatTotal');
+        if (total) total.innerText = logs.length;
+        const countBadge = document.getElementById('visibleLogsCount');
+        if (countBadge) countBadge.innerText = `${logs.length} records`;
+
+        const successCount = logs.filter(l => l.status === 'success' || l.status === 'approved').length;
+        const reviewCount = logs.filter(l => l.status === 'needs_review').length;
+        const successElem = document.getElementById('logStatSuccess');
+        if (successElem) successElem.innerText = successCount;
+        const reviewElem = document.getElementById('logStatReview');
+        if (reviewElem) reviewElem.innerText = reviewCount;
+
+        filterLogs();
+        showToast("Audit logs berhasil dimuat ulang secara live.");
+      } catch (err) {
+        showToast(err.message, true);
       }
     }
   </script>

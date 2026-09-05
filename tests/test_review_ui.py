@@ -114,3 +114,21 @@ def test_get_enquiry_detail_with_attachment(seeded_db, monkeypatch):
     assert len(data["attachments"]) >= 1
     assert data["attachments"][0]["filename"] == "01_hume_energy_bill.txt"
     assert "68,420" in data["attachments"][0]["content"] or "68420" in data["attachments"][0]["content"]
+
+def test_list_audit_logs_endpoint(seeded_db, monkeypatch):
+    monkeypatch.setattr("app.main.DATABASE_PATH", seeded_db)
+    client = TestClient(app)
+
+    resp = client.get("/api/audit-logs")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert isinstance(data, list)
+    assert len(data) > 0
+    assert "step" in data[0]
+    assert "status" in data[0]
+
+    # Test filtering by step
+    resp_filtered = client.get("/api/audit-logs?step=classify")
+    assert resp_filtered.status_code == 200
+    filtered_data = resp_filtered.json()
+    assert all(item["step"] == "classify" for item in filtered_data)
