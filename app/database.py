@@ -138,4 +138,22 @@ def log_audit(
     if should_close:
         conn.close()
 
+def reset_db(db_path: Optional[str] = None):
+    """Safely drops all system tables and re-initializes clean schema."""
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.executescript("""
+        DROP TABLE IF EXISTS dispatched_messages;
+        DROP TABLE IF EXISTS audit_logs;
+        DROP TABLE IF EXISTS duplicate_reviews;
+        DROP TABLE IF EXISTS attachments;
+        DROP TABLE IF EXISTS enquiries;
+        DROP TABLE IF EXISTS crm_records;
+        DROP TABLE IF EXISTS staff;
+    """)
+    conn.commit()
+    conn.close()
+    init_db(db_path)
+
+
 

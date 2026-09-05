@@ -634,6 +634,9 @@
       <button class="btn btn-primary" id="btnProcessAll" onclick="triggerProcessAll()">
         ⚡ Process All with Gemini 3.8 Flash
       </button>
+      <button class="btn btn-outline" style="border-color: rgba(244, 63, 94, 0.5); color: var(--accent-rose);" id="btnResetDB" onclick="triggerResetDatabase()" title="Reset database to initial raw ingested state">
+        🔄 Reset System
+      </button>
       <button class="btn btn-outline" onclick="location.reload()">Refresh</button>
     </div>
   </header>
@@ -1131,6 +1134,35 @@
         setTimeout(() => location.reload(), 1000);
       } catch (err) {
         showToast(err.message, true);
+      }
+    }
+
+    async function triggerResetDatabase() {
+      const confirmed = confirm("Apakah Anda yakin ingin me-reset seluruh database kembali ke kondisi awal (raw data mentah)? Seluruh progress draf dan peninjauan akan dibersihkan.");
+      if (!confirmed) return;
+
+      const btn = document.getElementById('btnResetDB');
+      const originalText = btn ? btn.innerHTML : '🔄 Reset System';
+      if (btn) {
+        btn.innerHTML = '⏳ Resetting...';
+        btn.disabled = true;
+      }
+      showToast("Me-reset database dan men-seed ulang data mentah dari data/data.md...");
+
+      try {
+        const res = await fetch('/api/reset', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || "Gagal me-reset database");
+        }
+        showToast("Database berhasil di-reset ke status awal INGESTED.");
+        setTimeout(() => location.reload(), 1000);
+      } catch (err) {
+        showToast(err.message, true);
+        if (btn) {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+        }
       }
     }
   </script>

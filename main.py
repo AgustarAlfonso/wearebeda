@@ -10,7 +10,7 @@ import argparse
 import uvicorn
 
 from app.config import DATABASE_PATH, DATA_PATH, GEMINI_API_KEY, GEMINI_MODEL, ANTHROPIC_API_KEY
-from app.database import init_db, get_db_connection
+from app.database import init_db, get_db_connection, reset_db
 from app.seeder import seed_database_from_file
 from app.orchestrator import process_enquiry, process_all_enquiries
 from app.entity_resolver import run_level_1_crm_resolution
@@ -18,14 +18,7 @@ from app.entity_resolver import run_level_1_crm_resolution
 def cmd_reset(args):
     """Resets SQLite database file and re-seeds from data/data.md."""
     print("--- Resetting BEDA SQLite Database ---")
-    if os.path.exists(DATABASE_PATH):
-        try:
-            os.remove(DATABASE_PATH)
-            print(f"[OK] Removed existing database: {DATABASE_PATH}")
-        except Exception as e:
-            print(f"[WARN] Could not remove {DATABASE_PATH}: {e}")
-
-    init_db(DATABASE_PATH)
+    reset_db(DATABASE_PATH)
     seed_database_from_file(DATA_PATH, db_path=DATABASE_PATH)
     print(f"[OK] Database re-initialized and seeded cleanly from {DATA_PATH}.")
 

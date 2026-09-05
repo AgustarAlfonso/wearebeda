@@ -389,5 +389,17 @@ def api_process_single(enquiry_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/reset")
+def api_reset_database():
+    """Resets database cleanly and re-seeds from data/data.md."""
+    try:
+        from app.database import reset_db
+        reset_db(DATABASE_PATH)
+        seed_database_from_file(DATA_PATH, db_path=DATABASE_PATH)
+        return {"status": "ok", "message": "Database successfully reset and re-seeded from scratch."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Reset failed: {str(e)}")
+
+
 
 
