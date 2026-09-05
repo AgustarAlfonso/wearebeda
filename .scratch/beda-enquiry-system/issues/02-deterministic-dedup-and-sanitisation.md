@@ -5,11 +5,12 @@ An input normalization, sanitisation, and short-circuit deduplication pipeline. 
 
 **Blocked by:** 01 — Defensive CRM Seeding, SQLite Foundation & Audit Log Schema
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Inbound text bodies and attachments are normalized and sanitized to neutralize prompt-injection sequences and unsafe tags.
-- [ ] Attachments (01_hume_energy_bill.txt, 02_northbank_site_notes.txt, 03_greenfields_invoice_query.txt) are sanitized using the same rigor as enquiry message bodies.
-- [ ] Deterministic exact duplicate detection hashes sender email, channel, and content.
-- [ ] Exact duplicate submissions short-circuit immediately to the audit log without incurring LLM cost.
-- [ ] Non-duplicate clean enquiries pass cleanly to the next pipeline stage.
-- [ ] Automated tests verify injection neutralization and exact duplicate short-circuiting.
+- [x] Inbound text bodies and attachments are normalized and sanitized to neutralize prompt-injection sequences and unsafe tags.
+- [x] Attachments (01_hume_energy_bill.txt, 02_northbank_site_notes.txt, 03_greenfields_invoice_query.txt) are sanitized using the same rigor as enquiry message bodies.
+- [x] Deterministic exact duplicate detection hashes sender email, channel, and content.
+- [x] Exact duplicate submissions short-circuit immediately to the audit log without incurring LLM cost.
+- [x] Non-duplicate clean enquiries pass cleanly to the next pipeline stage.
+- [x] Automated tests verify injection neutralization and exact duplicate short-circuiting.
+

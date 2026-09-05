@@ -128,7 +128,9 @@ def log_audit(
         VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (ts, input_id, step, output_str, model_used, reasoning, status))
 
+    conn.commit()
+
     if should_close:
-        conn.commit()
         conn.close()
+
 
