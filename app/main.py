@@ -105,6 +105,10 @@ def get_dashboard(request: Request):
     raw_logs = cursor.fetchall()
     audit_logs = [dict(r) for r in raw_logs]
 
+    cursor.execute("SELECT * FROM crm_records ORDER BY id ASC")
+    raw_crm = cursor.fetchall()
+    crm_records = [dict(r) for r in raw_crm]
+
     total_enquiries = len(enquiries)
     pending_review_count = sum(1 for e in enquiries if e.get("status") == "PENDING_REVIEW")
     dispatched_count = sum(1 for e in enquiries if e.get("status") == "APPROVED_DISPATCHED")
@@ -119,6 +123,7 @@ def get_dashboard(request: Request):
         context={
             "enquiries": enquiries,
             "duplicate_reviews": dups,
+            "crm_records": crm_records,
             "audit_logs": audit_logs,
             "total_enquiries": total_enquiries,
             "pending_review_count": pending_review_count,
@@ -350,10 +355,83 @@ def get_duplicate_review(review_id: int):
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM duplicate_reviews WHERE id = ?", (review_id,))
     row = cursor.fetchone()
-    conn.close()
     if not row:
+        conn.close()
         raise HTTPException(status_code=404, detail=f"Review {review_id} not found")
-    return dict(row)
+    
+    data = dict(row)
+    data["parsed_claim"] = None
+    if data.get("unverified_claim"):
+        try:
+            parsed = json.loads(data["unverified_claim"]) if isinstance(data["unverified_claim"], str) else data["unverified_claim"]
+            if isinstance(parsed, dict):
+                data["parsed_claim"] = parsed
+        except Exception:
+            pass
+
+    def fetch_entity_info(entity_id: str):
+        if not entity_id:
+            return None
+        if entity_id.startswith("C"):
+            cursor.execute("SELECT * FROM crm_records WHERE id = ?", (entity_id,))
+            rec = cursor.fetchone()
+            if rec:
+                r = dict(rec)
+                r["entity_type"] = "CRM"
+                return r
+        elif entity_id.startswith("E"):
+            cursor.execute("SELECT * FROM enquiries WHERE id = ?", (entity_id,))
+            rec = cursor.fetchone()
+            if rec:
+                r = dict(rec)
+                r["entity_type"] = "ENQUIRY"
+                return r
+        return {"id": entity_id, "entity_type": "UNKNOWN"}
+
+    data["source_data"] = fetch_entity_info(data.get("source_id"))
+    data["target_data"] = fetch_entity_info(data.get("target_id"))
+    conn.close()
+    return data
+
+@app.get("/api/crm-records")
+def list_crm_records(query: Optional[str] = None, type: Optional[str] = None):
+    conn = get_db_connection(DATABASE_PATH)
+    cursor = conn.cursor()
+    sql = "SELECT * FROM crm_records WHERE 1=1"
+    params: List[Any] = []
+    if query:
+        q = f"%{query}%"
+        sql += " AND (id LIKE ? OR company LIKE ? OR contact LIKE ? OR email LIKE ? OR phone LIKE ? OR location LIKE ?)"
+        params.extend([q, q, q, q, q, q])
+    if type and type != "ALL":
+        sql += " AND type = ?"
+        params.append(type)
+    sql += " ORDER BY id ASC"
+    cursor.execute(sql, params)
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+@app.get("/api/crm-records/{crm_id}")
+def get_crm_record(crm_id: str):
+    conn = get_db_connection(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM crm_records WHERE id = ?", (crm_id,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"CRM Record {crm_id} not found")
+    
+    crm = dict(row)
+    email = (crm.get("email") or "").lower().strip()
+    cursor.execute("SELECT id, subject, category, status, created_at FROM enquiries WHERE LOWER(sender_email) = ? ORDER BY id ASC", (email,))
+    crm["associated_enquiries"] = [dict(e) for e in cursor.fetchall()]
+
+    cursor.execute("SELECT id, match_level, source_id, target_id, status, description FROM duplicate_reviews WHERE source_id = ? OR target_id = ?", (crm_id, crm_id))
+    crm["related_reviews"] = [dict(r) for r in cursor.fetchall()]
+
+    conn.close()
+    return crm
 
 @app.post("/api/reviews/{review_id}/merge")
 def api_merge_review(review_id: int, req: Optional[MergeRequest] = None):

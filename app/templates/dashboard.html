@@ -1055,6 +1055,9 @@
       <button class="nav-tab" id="navTabDuplicates" onclick="switchView('duplicates')">
         👥 Deteksi Duplikat & Kontak <span class="nav-badge" style="{% if pending_dups_count > 0 %}background: rgba(245, 158, 11, 0.25); color: var(--accent-amber); border: 1px solid rgba(245, 158, 11, 0.5);{% endif %}">{{ duplicate_reviews|length }}</span>
       </button>
+      <button class="nav-tab" id="navTabCrm" onclick="switchView('crm')">
+        🏢 Direktori CRM <span class="nav-badge" id="crmCountBadge">{{ crm_records|length }}</span>
+      </button>
       <button class="nav-tab" id="navTabLogs" onclick="switchView('logs')">
         📜 Audit Logs <span class="nav-badge" id="logsCountBadge">{{ audit_logs|length }}</span>
       </button>
@@ -1329,6 +1332,9 @@
             {% endif %}
 
             <div class="dup-actions" style="margin-top: 14px;">
+              <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.82rem;" onclick="openDupDetailModal({{ dup.id }})" title="Buka analisis perbandingan lengkap entitas sumber dan target">
+                🔍 Detail Pembanding
+              </button>
               {% if dup.status == 'PENDING' %}
                 <button class="btn btn-primary" onclick="resolveReview('{{ dup.id }}', 'merge')" title="Gabungkan kedua entitas karena merupakan entitas yang sama">
                   🔗 Gabungkan Data
@@ -1353,6 +1359,114 @@
       {% endif %}
     </div>
     <!-- /viewDuplicates -->
+
+    <!-- View 3: Direktori Kontak & Entitas CRM -->
+    <div id="viewCrm" style="display: none;">
+      <!-- CRM Metrics Grid -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <span class="metric-title">Total Entitas CRM</span>
+          <span class="metric-value" id="crmStatTotal">{{ crm_records|length }}</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-title">Pelanggan (Customer)</span>
+          <span class="metric-value" style="color: var(--accent-emerald);" id="crmStatCustomer">
+            {{ crm_records | selectattr("type", "equalto", "Customer") | list | length }}
+          </span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-title">Prospek / Leads</span>
+          <span class="metric-value" style="color: var(--accent-cyan);" id="crmStatProspect">
+            {{ crm_records | selectattr("type", "equalto", "Prospect") | list | length }}
+          </span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-title">Partner / Vendor</span>
+          <span class="metric-value" style="color: var(--accent-purple);" id="crmStatPartner">
+            {{ crm_records | selectattr("type", "equalto", "Partner") | list | length }}
+          </span>
+        </div>
+      </div>
+
+      <!-- CRM Section Header with Search and Filter -->
+      <div class="section-header" style="flex-wrap: wrap; gap: 12px;">
+        <div>
+          <div class="section-title">
+            <span>Direktori Master Data CRM</span>
+            <span class="badge-count" id="visibleCrmCount">{{ crm_records|length }} records</span>
+          </div>
+          <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: 4px;">
+            Profil entitas terverifikasi, nomor kontak resmi, riwayat akun, dan minat produk.
+          </p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <input type="text" id="crmSearchInput" class="search-input" placeholder="🔍 Cari ID, Perusahaan, PIC, Email, Telp..." oninput="filterCrmTable()">
+          <div class="filter-group">
+            <button class="filter-btn active crm-type-btn" onclick="filterCrmByType('ALL', this)">Semua Tipe</button>
+            <button class="filter-btn crm-type-btn" onclick="filterCrmByType('Customer', this)">Customer</button>
+            <button class="filter-btn crm-type-btn" onclick="filterCrmByType('Prospect', this)">Prospect</button>
+            <button class="filter-btn crm-type-btn" onclick="filterCrmByType('Partner', this)">Partner</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CRM Table -->
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 75px;">ID CRM</th>
+              <th>Perusahaan</th>
+              <th>Kontak PIC</th>
+              <th>Email & Telepon</th>
+              <th>Lokasi</th>
+              <th>Tipe & Minat Produk</th>
+              <th>Status</th>
+              <th style="width: 90px; text-align: center;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="crmTableBody">
+            {% for crm in crm_records %}
+            <tr class="crm-row" data-id="{{ crm.id }}" data-type="{{ crm.type }}" data-status="{{ crm.status }}">
+              <td style="font-family: var(--font-mono); font-weight: 600; color: var(--accent-cyan);">{{ crm.id }}</td>
+              <td>
+                <div style="font-weight: 600; color: var(--text-main);">{{ crm.company }}</div>
+              </td>
+              <td>
+                <div style="font-weight: 500;">{{ crm.contact }}</div>
+              </td>
+              <td>
+                <div style="font-family: var(--font-mono); font-size: 0.84rem;">{{ crm.email }}</div>
+                {% if crm.phone %}
+                  <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--accent-amber); margin-top: 2px;">📞 {{ crm.phone }}</div>
+                {% else %}
+                  <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px; font-style: italic;">(Belum ada no. telp)</div>
+                {% endif %}
+              </td>
+              <td style="font-size: 0.85rem; color: var(--text-muted);">{{ crm.location or '-' }}</td>
+              <td>
+                <div>
+                  <span class="badge" style="background: rgba(56, 189, 248, 0.12); color: var(--accent-cyan); border: 1px solid rgba(56, 189, 248, 0.3);">{{ crm.type }}</span>
+                </div>
+                {% if crm.interest %}
+                  <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 4px;">{{ crm.interest }}</div>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge badge-{{ crm.status|lower }}">{{ crm.status }}</span>
+              </td>
+              <td style="text-align: center;">
+                <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.8rem;" onclick="openCrmModal('{{ crm.id }}')">
+                  Inspect
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- /viewCrm -->
 
 
     <!-- View 2: Audit & System Logs -->
@@ -1471,6 +1585,73 @@
     </div>
     <!-- /viewLogs -->
   </main>
+
+  <!-- Duplicate Review Detail & Comparison Modal -->
+  <div class="modal-overlay" id="dupDetailModal">
+    <div class="modal-container" style="max-width: 1050px;">
+      <div class="modal-header">
+        <div class="modal-title" id="dupModalTitle">🔍 Perbandingan Detail Duplikat & Kontak</div>
+        <button class="modal-close" onclick="closeDupDetailModal()">&times;</button>
+      </div>
+
+      <div class="modal-body" style="grid-template-columns: 1fr 1fr; gap: 1.5rem; max-height: 60vh; overflow-y: auto;">
+        <!-- Left Column: Source Entity -->
+        <div class="modal-panel">
+          <div class="panel-section-title" id="dupSourceTitle">Sumber (Source Entity)</div>
+          <div class="info-card" id="dupSourceContent" style="font-size: 0.86rem; line-height: 1.6;">
+            Memuat data sumber...
+          </div>
+        </div>
+
+        <!-- Right Column: Target Entity -->
+        <div class="modal-panel">
+          <div class="panel-section-title" id="dupTargetTitle">Target Pembanding (Target Entity)</div>
+          <div class="info-card" id="dupTargetContent" style="font-size: 0.86rem; line-height: 1.6;">
+            Memuat data target pembanding...
+          </div>
+        </div>
+      </div>
+
+      <!-- Analysis & Discrepancies Box -->
+      <div style="padding: 0.5rem 1.75rem 1.25rem 1.75rem;">
+        <div id="dupAnalysisBox" style="background: rgba(30, 41, 59, 0.7); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem 1.25rem;">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+        <div id="dupModalActions" style="display: flex; gap: 8px;"></div>
+        <button class="btn btn-outline" onclick="closeDupDetailModal()">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CRM Record Detail Modal -->
+  <div class="modal-overlay" id="crmDetailModal">
+    <div class="modal-container" style="max-width: 800px;">
+      <div class="modal-header">
+        <div class="modal-title" id="crmModalTitle">🏢 Detail Profil CRM</div>
+        <button class="modal-close" onclick="closeCrmModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="grid-template-columns: 1fr; max-height: 65vh; overflow-y: auto;">
+        <div class="modal-panel">
+          <div class="panel-section-title">Informasi Entitas Master</div>
+          <div class="info-card" id="crmModalContent" style="font-size: 0.88rem; line-height: 1.6;">
+            Memuat profil CRM...
+          </div>
+          <div style="margin-top: 1.25rem;">
+            <div class="panel-section-title">Kasus Terkait / Enquiry History</div>
+            <div id="crmModalAssociatedEnquiries" style="font-size: 0.85rem; color: var(--text-muted);">
+              Tidak ada kasus terkait.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeCrmModal()">Tutup</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Detail & Review Modal -->
   <div class="modal-overlay" id="reviewModal">
@@ -2208,29 +2389,238 @@
     }
 
 
-    // View Switching Logic (Enquiries vs Duplicates vs Audit Logs)
+    // View Switching Logic (Enquiries vs Duplicates vs CRM vs Audit Logs)
     let currentView = 'enquiries';
     let selectedLogStatus = 'ALL';
     let selectedLogStep = 'ALL';
+    let selectedCrmType = 'ALL';
 
     function switchView(viewName) {
       currentView = viewName;
       const viewEnq = document.getElementById('viewEnquiries');
       const viewDups = document.getElementById('viewDuplicates');
+      const viewCrm = document.getElementById('viewCrm');
       const viewLogs = document.getElementById('viewLogs');
       const tabEnq = document.getElementById('navTabEnquiries');
       const tabDups = document.getElementById('navTabDuplicates');
+      const tabCrm = document.getElementById('navTabCrm');
       const tabLogs = document.getElementById('navTabLogs');
 
       if (viewEnq) viewEnq.style.display = (viewName === 'enquiries') ? 'block' : 'none';
       if (viewDups) viewDups.style.display = (viewName === 'duplicates') ? 'block' : 'none';
+      if (viewCrm) viewCrm.style.display = (viewName === 'crm') ? 'block' : 'none';
       if (viewLogs) viewLogs.style.display = (viewName === 'logs') ? 'block' : 'none';
 
       if (tabEnq) tabEnq.classList.toggle('active', viewName === 'enquiries');
       if (tabDups) tabDups.classList.toggle('active', viewName === 'duplicates');
+      if (tabCrm) tabCrm.classList.toggle('active', viewName === 'crm');
       if (tabLogs) tabLogs.classList.toggle('active', viewName === 'logs');
       
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function filterCrmByType(type, btn) {
+      selectedCrmType = type;
+      document.querySelectorAll('.crm-type-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      filterCrmTable();
+    }
+
+    function filterCrmTable() {
+      const q = (document.getElementById('crmSearchInput')?.value || '').toLowerCase().trim();
+      const rows = document.querySelectorAll('#crmTableBody .crm-row');
+      let visibleCount = 0;
+      rows.forEach(row => {
+        const rowType = row.getAttribute('data-type');
+        const text = row.innerText.toLowerCase();
+        const matchesType = (selectedCrmType === 'ALL' || rowType === selectedCrmType);
+        const matchesQuery = !q || text.includes(q);
+        if (matchesType && matchesQuery) {
+          row.style.display = '';
+          visibleCount++;
+        } else {
+          row.style.display = 'none';
+        }
+      });
+      const countBadge = document.getElementById('visibleCrmCount');
+      if (countBadge) countBadge.innerText = `${visibleCount} records`;
+    }
+
+    async function openCrmModal(crmId) {
+      const modal = document.getElementById('crmDetailModal');
+      const content = document.getElementById('crmModalContent');
+      const enqsContainer = document.getElementById('crmModalAssociatedEnquiries');
+      if (!modal || !content) return;
+      modal.classList.add('active');
+      content.innerHTML = '<div style="color: var(--text-dim);">Mengambil profil CRM ' + escapeHtml(crmId) + '...</div>';
+      
+      try {
+        const res = await fetch(`/api/crm-records/${crmId}`);
+        if (!res.ok) throw new Error("Gagal memuat profil CRM");
+        const crm = await res.json();
+        
+        content.innerHTML = `
+          <div class="info-row"><span class="info-label">ID CRM</span><span class="info-value" style="font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 600;">${escapeHtml(crm.id)}</span></div>
+          <div class="info-row"><span class="info-label">Perusahaan</span><span class="info-value" style="font-weight: 600;">${escapeHtml(crm.company)}</span></div>
+          <div class="info-row"><span class="info-label">Kontak PIC</span><span class="info-value">${escapeHtml(crm.contact)}</span></div>
+          <div class="info-row"><span class="info-label">Email Resmi</span><span class="info-value" style="font-family: var(--font-mono);">${escapeHtml(crm.email)}</span></div>
+          <div class="info-row"><span class="info-label">Nomor Telepon</span><span class="info-value" style="font-family: var(--font-mono); color: var(--accent-amber);">${escapeHtml(crm.phone || '(Belum terdaftar)')}</span></div>
+          <div class="info-row"><span class="info-label">Lokasi</span><span class="info-value">${escapeHtml(crm.location || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Tipe Akun</span><span class="info-value"><span class="badge" style="background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan);">${escapeHtml(crm.type)}</span></span></div>
+          <div class="info-row"><span class="info-label">Minat Produk</span><span class="info-value">${escapeHtml(crm.interest || '-')}</span></div>
+          <div class="info-row"><span class="info-label">Status CRM</span><span class="info-value"><span class="badge badge-${escapeHtml(crm.status.toLowerCase())}">${escapeHtml(crm.status)}</span></span></div>
+        `;
+
+        if (crm.associated_enquiries && crm.associated_enquiries.length > 0) {
+          enqsContainer.innerHTML = crm.associated_enquiries.map(e => `
+            <div style="background: var(--bg-surface-elevated); padding: 8px 12px; border-radius: var(--radius-sm); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong style="color: var(--accent-cyan); font-family: var(--font-mono);">${escapeHtml(e.id)}</strong> - <span>${escapeHtml(e.subject)}</span>
+              </div>
+              <span class="badge badge-${escapeHtml(e.status)}">${escapeHtml(e.status)}</span>
+            </div>
+          `).join('');
+        } else {
+          enqsContainer.innerHTML = '<div style="font-style: italic; color: var(--text-dim);">Belum ada riwayat kasus masuk terkait email ini.</div>';
+        }
+      } catch (err) {
+        content.innerHTML = `<div style="color: var(--accent-rose);">${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function closeCrmModal() {
+      const modal = document.getElementById('crmDetailModal');
+      if (modal) modal.classList.remove('active');
+    }
+
+    async function openDupDetailModal(reviewId) {
+      const modal = document.getElementById('dupDetailModal');
+      const sourceBox = document.getElementById('dupSourceContent');
+      const targetBox = document.getElementById('dupTargetContent');
+      const analysisBox = document.getElementById('dupAnalysisBox');
+      const actionsBox = document.getElementById('dupModalActions');
+      if (!modal) return;
+      modal.classList.add('active');
+      sourceBox.innerHTML = '<div style="color: var(--text-dim);">Memuat data entitas sumber...</div>';
+      targetBox.innerHTML = '<div style="color: var(--text-dim);">Memuat data target pembanding...</div>';
+      analysisBox.innerHTML = '<div style="color: var(--text-dim);">Menganalisis perbandingan...</div>';
+      actionsBox.innerHTML = '';
+
+      try {
+        const res = await fetch(`/api/reviews/${reviewId}`);
+        if (!res.ok) throw new Error("Gagal memuat rincian duplikat");
+        const data = await res.json();
+
+        // Render Source Entity
+        if (data.source_data) {
+          const s = data.source_data;
+          if (s.entity_type === 'ENQUIRY') {
+            sourceBox.innerHTML = `
+              <div style="margin-bottom: 8px;"><span class="badge" style="background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan);">📨 Kasus Enquiry (${escapeHtml(s.id)})</span></div>
+              <div class="info-row"><span class="info-label">Pengirim</span><span class="info-value" style="font-weight: 600;">${escapeHtml(s.sender_name || 'Tidak diketahui')}</span></div>
+              <div class="info-row"><span class="info-label">Email</span><span class="info-value" style="font-family: var(--font-mono);">${escapeHtml(s.sender_email || '-')}</span></div>
+              <div class="info-row"><span class="info-label">Channel</span><span class="info-value">${escapeHtml(s.channel || 'email')}</span></div>
+              <div class="info-row"><span class="info-label">Subjek</span><span class="info-value">${escapeHtml(s.subject || '-')}</span></div>
+              <div class="info-row"><span class="info-label">Status</span><span class="info-value"><span class="badge badge-${escapeHtml(s.status)}">${escapeHtml(s.status)}</span></span></div>
+              <div style="margin-top: 10px; background: rgba(0,0,0,0.25); padding: 8px 10px; border-radius: var(--radius-sm); font-size: 0.8rem; max-height: 120px; overflow-y: auto;">
+                <strong>Isi Pesan:</strong><br>${escapeHtml(s.body || s.raw_content || '-')}
+              </div>
+            `;
+          } else if (s.entity_type === 'CRM') {
+            sourceBox.innerHTML = `
+              <div style="margin-bottom: 8px;"><span class="badge" style="background: rgba(168, 85, 247, 0.15); color: var(--accent-purple);">🏢 Entitas CRM (${escapeHtml(s.id)})</span></div>
+              <div class="info-row"><span class="info-label">Perusahaan</span><span class="info-value" style="font-weight: 600;">${escapeHtml(s.company)}</span></div>
+              <div class="info-row"><span class="info-label">Kontak PIC</span><span class="info-value">${escapeHtml(s.contact)}</span></div>
+              <div class="info-row"><span class="info-label">Email</span><span class="info-value" style="font-family: var(--font-mono);">${escapeHtml(s.email)}</span></div>
+              <div class="info-row"><span class="info-label">Telepon</span><span class="info-value" style="font-family: var(--font-mono); color: var(--accent-amber);">${escapeHtml(s.phone || '(Kosong)')}</span></div>
+              <div class="info-row"><span class="info-label">Lokasi</span><span class="info-value">${escapeHtml(s.location || '-')}</span></div>
+              <div class="info-row"><span class="info-label">Tipe</span><span class="info-value">${escapeHtml(s.type || '-')}</span></div>
+            `;
+          }
+        } else {
+          sourceBox.innerHTML = `<div>ID: ${escapeHtml(data.source_id)}</div>`;
+        }
+
+        // Render Target Entity
+        if (data.target_data) {
+          const t = data.target_data;
+          if (t.entity_type === 'CRM') {
+            targetBox.innerHTML = `
+              <div style="margin-bottom: 8px;"><span class="badge" style="background: rgba(168, 85, 247, 0.15); color: var(--accent-purple);">🏢 Profil CRM Master (${escapeHtml(t.id)})</span></div>
+              <div class="info-row"><span class="info-label">Perusahaan</span><span class="info-value" style="font-weight: 600;">${escapeHtml(t.company)}</span></div>
+              <div class="info-row"><span class="info-label">Kontak PIC</span><span class="info-value">${escapeHtml(t.contact)}</span></div>
+              <div class="info-row"><span class="info-label">Email</span><span class="info-value" style="font-family: var(--font-mono);">${escapeHtml(t.email)}</span></div>
+              <div class="info-row"><span class="info-label">Telepon</span><span class="info-value" style="font-family: var(--font-mono); color: var(--accent-amber);">${escapeHtml(t.phone || '(Kosong)')}</span></div>
+              <div class="info-row"><span class="info-label">Lokasi</span><span class="info-value">${escapeHtml(t.location || '-')}</span></div>
+              <div class="info-row"><span class="info-label">Tipe</span><span class="info-value">${escapeHtml(t.type || '-')}</span></div>
+            `;
+          } else if (t.entity_type === 'ENQUIRY') {
+            targetBox.innerHTML = `
+              <div style="margin-bottom: 8px;"><span class="badge" style="background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan);">📨 Kasus Enquiry Pembanding (${escapeHtml(t.id)})</span></div>
+              <div class="info-row"><span class="info-label">Pengirim</span><span class="info-value" style="font-weight: 600;">${escapeHtml(t.sender_name || 'Tidak diketahui')}</span></div>
+              <div class="info-row"><span class="info-label">Email</span><span class="info-value" style="font-family: var(--font-mono);">${escapeHtml(t.sender_email || '-')}</span></div>
+              <div class="info-row"><span class="info-label">Channel</span><span class="info-value">${escapeHtml(t.channel || 'email')}</span></div>
+              <div class="info-row"><span class="info-label">Subjek</span><span class="info-value">${escapeHtml(t.subject || '-')}</span></div>
+              <div class="info-row"><span class="info-label">Status</span><span class="info-value"><span class="badge badge-${escapeHtml(t.status)}">${escapeHtml(t.status)}</span></span></div>
+            `;
+          }
+        } else {
+          targetBox.innerHTML = `<div>ID: ${escapeHtml(data.target_id)}</div>`;
+        }
+
+        // Render Analysis Box
+        let claimHtml = '';
+        if (data.parsed_claim) {
+          claimHtml = `
+            <div style="margin-top: 10px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: var(--radius-sm); padding: 10px 14px;">
+              <div style="font-weight: 600; color: var(--accent-amber); font-size: 0.84rem; margin-bottom: 6px;">📋 Temuan Kontak Baru Pada Pesan:</div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; font-size: 0.82rem;">
+                ${data.parsed_claim.phone ? `<div>📞 <strong>Telepon:</strong> <code style="color: var(--accent-cyan); font-family: var(--font-mono);">${escapeHtml(data.parsed_claim.phone)}</code></div>` : ''}
+                ${data.parsed_claim.email ? `<div>✉️ <strong>Email:</strong> <code style="color: var(--accent-cyan); font-family: var(--font-mono);">${escapeHtml(data.parsed_claim.email)}</code></div>` : ''}
+                ${data.parsed_claim.company ? `<div>🏢 <strong>Perusahaan:</strong> ${escapeHtml(data.parsed_claim.company)}</div>` : ''}
+                ${data.parsed_claim.contact ? `<div>👤 <strong>PIC:</strong> ${escapeHtml(data.parsed_claim.contact)}</div>` : ''}
+              </div>
+            </div>
+          `;
+        } else if (data.unverified_claim) {
+          claimHtml = `<div style="margin-top: 8px; font-size: 0.84rem; color: var(--accent-amber);"><strong>Catatan:</strong> ${escapeHtml(data.unverified_claim)}</div>`;
+        }
+
+        analysisBox.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 0.88rem; font-weight: 600; color: var(--text-main);">🤖 Kesimpulan Deteksi AI (${escapeHtml(data.match_level)})</span>
+            <span class="badge badge-${escapeHtml(data.status)}">${data.status === 'PENDING' ? 'Perlu Keputusan Human-in-the-Loop' : escapeHtml(data.status)}</span>
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">${escapeHtml(data.description)}</div>
+          ${claimHtml}
+        `;
+
+        // Render Action Buttons
+        if (data.status === 'PENDING') {
+          actionsBox.innerHTML = `
+            <button class="btn btn-primary" onclick="resolveReview('${data.id}', 'merge'); closeDupDetailModal();" title="Gabungkan kedua data">
+              🔗 Gabungkan Data
+            </button>
+            ${data.unverified_claim ? `
+              <button class="btn btn-success" onclick="resolveReview('${data.id}', 'update-field'); closeDupDetailModal();" title="Perbarui info kontak CRM">
+                ✏️ Update Kontak CRM
+              </button>
+            ` : ''}
+            <button class="btn btn-outline" onclick="resolveReview('${data.id}', 'keep-separate'); closeDupDetailModal();" title="Biarkan terpisah">
+              ✂️ Tetap Pisahkan
+            </button>
+          `;
+        } else {
+          actionsBox.innerHTML = `<span style="color: var(--accent-emerald); font-size: 0.86rem; font-weight: 500;">✓ Selesai Diproses (${escapeHtml(data.status)})</span>`;
+        }
+      } catch (err) {
+        sourceBox.innerHTML = `<div style="color: var(--accent-rose);">${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function closeDupDetailModal() {
+      const modal = document.getElementById('dupDetailModal');
+      if (modal) modal.classList.remove('active');
     }
 
     function filterDuplicates(status, btn) {

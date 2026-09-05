@@ -167,7 +167,28 @@ def test_api_review_endpoints(test_db, monkeypatch):
 
     review_id = data[0]["id"]
 
-    # 2. POST /api/reviews/{id}/keep-separate
+    # 2. GET /api/reviews/{id} detail
+    detail_resp = client.get(f"/api/reviews/{review_id}")
+    assert detail_resp.status_code == 200
+    detail_data = detail_resp.json()
+    assert "source_data" in detail_data
+    assert "target_data" in detail_data
+
+    # 3. GET /api/crm-records
+    crm_resp = client.get("/api/crm-records")
+    assert crm_resp.status_code == 200
+    crm_list = crm_resp.json()
+    assert isinstance(crm_list, list)
+    assert len(crm_list) >= 1
+
+    first_crm_id = crm_list[0]["id"]
+    single_crm_resp = client.get(f"/api/crm-records/{first_crm_id}")
+    assert single_crm_resp.status_code == 200
+    single_crm = single_crm_resp.json()
+    assert single_crm["id"] == first_crm_id
+    assert "associated_enquiries" in single_crm
+
+    # 4. POST /api/reviews/{id}/keep-separate
     resp = client.post(f"/api/reviews/{review_id}/keep-separate", json={"note": "Reviewed and kept separate"})
     assert resp.status_code == 200
     assert resp.json()["status"] == "KEPT_SEPARATE"
