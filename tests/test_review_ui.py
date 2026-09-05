@@ -183,9 +183,9 @@ def test_separated_endpoints_require_api_key(seeded_db, monkeypatch):
 
     resp = client.post("/api/enquiries/E001/classify")
     assert resp.status_code == 400
-    assert "GEMINI_API_KEY belum ditemukan" in resp.json()["detail"]
+    assert "GEMINI_API_KEY was not found" in resp.json()["detail"]
 
     resp = client.post("/api/enquiries/E001/draft")
     assert resp.status_code == 400
-    assert "GEMINI_API_KEY belum ditemukan" in resp.json()["detail"]
+    assert "GEMINI_API_KEY was not found" in resp.json()["detail"]
 

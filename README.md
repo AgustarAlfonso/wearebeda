@@ -1,30 +1,31 @@
-# BEDA Automated Business Enquiry Handling System
+# BEDA: Automated Business Enquiry Handling System
 
-> **A defensive, auditable, and human-gated AI pipeline for commercial enquiry classification, entity resolution, and grounded response drafting.** Built with FastAPI, SQLite, and Anthropic Claude (`claude-haiku-4-5-20251001` & `claude-sonnet-5`).
+> **A defensive, auditable, and human-gated AI pipeline for commercial enquiry classification, entity resolution, and grounded response drafting.** Built with FastAPI, SQLite, and Google Gemini 3.8 Flash (`gemini-3.8-flash`).
 
 ---
 
 ## 1. System Overview
 
-BEDA receives diverse inbound communications across email, web forms, and internal system alerts. These inputs vary from high-value commercial solar and battery prospects with attached utility bills, to invoice reconciliation queries, malformed CRM records, and unsolicited marketing spam.
+BEDA processes diverse inbound communications across email, web forms, and internal system alerts. These inputs range from commercial solar and battery proposals with attached utility bills, to invoice reconciliation queries, malformed CRM records, and unsolicited marketing spam.
 
-Deploying autonomous AI agents to send emails or mutate customer records directly poses unacceptable commercial, legal, and operational risks. The **BEDA Automated Business Enquiry Handling System** solves this by enforcing:
+Deploying unconstrained autonomous AI agents to send emails or mutate customer records directly poses commercial, legal, and operational risks. The **BEDA Automated Business Enquiry Handling System** mitigates this through:
 
-1. **Defensive Ingestion & Sanitisation:** Defuses prompt-injection directives and sanitizes both email bodies and text attachments.
-2. **Defensive CRM Seeding:** Realigns malformed CRM data (e.g. row C002 missing the phone column) via closed-set enum validation.
-3. **3-Level Entity Resolution:** Identifies CRM-internal duplicates (Level 1: C001 vs C002), Enquiry-to-CRM matches (Level 2: E001/E002), and sequential enquiry contact corrections (Level 3: E009 to E010). Surfaces unverified contact claims for human review without silently mutating trusted data.
+1. **Defensive Ingestion and Sanitisation:** Defuses prompt-injection attempts and normalizes email bodies and file attachments.
+2. **Defensive CRM Seeding:** Realigns malformed CRM data (such as row C002 missing the phone column) using closed-set enum validation.
+3. **Three-Level Entity Resolution:** Identifies CRM-internal duplicates (Level 1: C001 vs C002), Enquiry-to-CRM matches (Level 2: E001/E002), and sequential enquiry contact updates (Level 3: E009 to E010). Surfaces unverified contact claims for human review without silently mutating trusted data.
 4. **Preservation of Uncertainty:** Routes enquiries to single staff owners, multi-candidate owners (`[Ties Rahardjo, Matt Cooper]` for E008), or zero-candidate owners (`[]` for E006) with `needs_confirmation: true`, refusing to guess unrepresented domains.
-5. **Dual-Model LLM Pipeline:** Claude Haiku 4.5 performs schema-enforced classification and structured extraction; Claude Sonnet 5 generates grounded customer replies quoting bill/PO figures or creates Internal Incident Tickets for system failures (E011).
-6. **Inviolable Human Review Gate:** Zero outbound messages are dispatched and zero CRM mutations are applied without explicit human approval via an interactive Jinja2 Web Dashboard.
-7. **Immutable Audit Trail:** Every pipeline decision appends a strict 7-field audit record (`timestamp`, `input_id`, `step`, `output`, `model_used`, `reasoning`, `status`).
+5. **Separated Two-Stage AI Processing:** Allows operators to run classification and response drafting separately or as an end-to-end pipeline.
+6. **Inviolable Human Review Gate:** Zero outbound messages are dispatched and zero CRM mutations are applied without explicit human approval via the interactive Web Dashboard.
+7. **CRM Directory and Side-by-Side Comparison:** Interactive directory for inspecting master CRM records and associated cases, alongside side-by-side duplicate comparison modals with clear decision guidance.
+8. **Immutable Audit Trail:** Every pipeline decision appends a strict 7-field audit record (`timestamp`, `input_id`, `step`, `output`, `model_used`, `reasoning`, `status`).
 
 ---
 
-## 2. Architecture & Data Flow
+## 2. Architecture and Data Flow
 
 ```mermaid
 flowchart TD
-    A[Inbound Enquiry / Attachment] --> B[Input Sanitiser & Exact Hash Dedup]
+    A[Inbound Enquiry / Attachment] --> B[Input Sanitiser & Hash Dedup]
     B -->|Duplicate Match| C[Short-Circuit Audit Log]
     B -->|Clean Input| D[3-Level Entity Resolver]
     
@@ -33,12 +34,12 @@ flowchart TD
     D --> D3[Level 3: Enquiry ↔ Enquiry]
     D1 & D2 & D3 --> E[Actionable Duplicate Review Queue]
     
-    D --> F[Claude Haiku 4.5 Classifier]
+    D --> F[Stage 1: Gemini 3.8 Flash Classifier]
     F -->|Tool Schema| G{5 Canonical Categories}
     
-    G -->|junk| H[Quarantine Queue - No Draft]
-    G -->|internal_alert| I[Claude Sonnet 5: Incident Ticket]
-    G -->|sales_lead / support / insufficient_info| J[Claude Sonnet 5: Grounded Reply]
+    G -->|junk| H[Quarantine Queue: No Draft]
+    G -->|internal_alert| I[Stage 2: Gemini 3.8 Flash: Incident Ticket]
+    G -->|sales_lead / support / insufficient_info| J[Stage 2: Gemini 3.8 Flash: Grounded Reply]
     
     I & J --> K[PENDING_REVIEW Queue]
     
@@ -46,11 +47,11 @@ flowchart TD
     E --> L
     
     L --> M{Human Gate}
-    M -->|Approve / Edit & Approve| N[Simulated External Dispatch & CRM Mutation]
+    M -->|Approve / Edit & Approve| N[External Dispatch & CRM Mutation]
     M -->|Reject| O[Cancelled Draft & Rejection Feedback Logged]
 ```
 
-### The 5 Canonical Categories & Routing Rules
+### The 5 Canonical Categories and Routing Rules
 
 | Category | Typical Inbound Scope | Default Candidate Owner | Example Case |
 | :--- | :--- | :--- | :--- |
@@ -62,14 +63,43 @@ flowchart TD
 
 ---
 
-## 3. Quickstart & Setup
+## 3. Key Dashboard Views and Capabilities
+
+The web dashboard is organized into four purpose-built views with full English antislop localization:
+
+### View 1: Enquiry Queue
+- **Granular Pipeline Controls:**
+  - `1. Classify All`: Runs intent classification, category assignment, owner routing, and contact claim extraction.
+  - `2. Draft Responses`: Generates grounded customer replies or incident tickets for verified cases.
+  - `Run Full Pipeline`: Executes classification, entity resolution, and drafting in an integrated sequence.
+  - Individual case action buttons for step-by-step evaluation.
+- **Review and Outbound Gate:** Side-by-side inspection of inbound messages, attached documents (such as utility bills), AI reasoning, and draft replies with inline editing, quick approval, or structured rejection.
+
+### View 2: Duplicate and Contact Review
+- **Decision Guidance Cards:** Explains key operational differences:
+  - **Merge Records:** Unifies duplicate entries under a single primary master record without data loss.
+  - **Update CRM Record:** Applies new, verified contact claims (phone, email, PIC) from incoming messages into the target CRM record.
+  - **Keep Separate:** Discards the duplicate flag, preserving distinct entity identities.
+- **Side-by-Side Comparison Modal (`#dupDetailModal`):** Shows source vs target records, AI match level badges (`Level 1`, `Level 2`, `Level 3`), confidence score, and extracted contact claims.
+
+### View 3: CRM Directory
+- **Entity Overview:** Metric cards summarizing Total Entities, Customers, Prospects, and Partners.
+- **Search and Filter:** Real-time query search (by company, contact, email, phone, or ID) and type filter chips.
+- **Profile Modal (`#crmDetailModal`):** Complete CRM attributes alongside all associated inbound enquiries from that account.
+
+### View 4: Audit Logs
+- **Immutable Log Explorer:** Real-time table of all pipeline events with status filters and detailed inspection modal (`#logDetailModal`).
+
+---
+
+## 4. Quickstart and Setup
 
 ### Prerequisites
 - Python 3.10+
 - SQLite 3 (included with Python)
 
 ### 1. Installation
-Clone the repository and install required dependencies:
+Clone the repository and install dependencies:
 ```bash
 git clone <repo-url>
 cd wearebeda
@@ -83,7 +113,7 @@ GEMINI_API_KEY=your_google_gemini_api_key_here
 ```
 > *Note: By default, the automated test suite and standard CLI runner support fast, deterministic fixtures (`app/fixtures.py`) that run offline with zero token cost, zero rate limits, and zero non-determinism via the `--fixtures` flag.*
 
-### 3. Initialize & Process via CLI
+### 3. Initialize and Process via CLI
 ```bash
 # Reset database cleanly and defensively seed from data/data.md
 python main.py reset
@@ -107,67 +137,63 @@ Interactive API documentation (Swagger UI) is available at: **[http://127.0.0.1:
 
 ---
 
-## 4. Testing & Verification
+## 5. Testing and Verification
 
-The repository contains 36 comprehensive automated tests covering the entire pipeline:
+The repository contains 38 automated unit and integration tests covering the entire pipeline:
 ```bash
-pytest
+python -m pytest -m "not live_llm"
 ```
-*Expected Output:* **35 passed, 1 skipped in ~17s** (1 skipped is the isolated live smoke test when live API keys are not supplied in CI).
+*Expected Output:* **38 passed, 1 deselected in ~17s** (1 deselected is the isolated live smoke test when live API keys are not supplied in CI).
 
 ### Running the Isolated Live Smoke Test
 To test live handshake connectivity against Google Gemini 3.8 Flash endpoints:
 ```bash
-pytest -m live_llm
+python -m pytest -m live_llm
 ```
 
 ---
 
-## 5. AI Models & Tools Used
+## 6. AI Models and Architecture
 
-1. **Google Gemini 3.8 Flash (`gemini-3.8-flash`)**:
-   - **Role:** High-speed, cost-efficient classification, structured entity extraction, and grounded drafting.
-   - **Release Date:** September 2, 2026 (Latest state-of-the-art iteration in the Gemini 3 family).
-   - **Schema Enforcement:** Employs the official `google-genai` Python SDK (`GenerateContentConfig`) with `response_mime_type="application/json"` and Pydantic `response_schema` to guarantee strict output typing, confidence scores, and uncertainty preservation.
-   - **Grounded Drafting:** Generates natural language draft responses and internal incident tickets (E011 for Ali Pratama) strictly constrained by verified numbers and attachment facts.
-   - **Context Window:** Up to 1,048,576 tokens (1M tokens) with 64K output capacity.
+### Google Gemini 3.8 Flash (`gemini-3.8-flash`)
+- **Role:** High-speed, cost-efficient classification, structured entity extraction, and grounded drafting.
+- **Release Date:** September 2, 2026 (Latest iteration in the Gemini family).
+- **Schema Enforcement:** Employs the official `google-genai` Python SDK (`GenerateContentConfig`) with `response_mime_type="application/json"` and Pydantic `response_schema` to guarantee strict output typing, confidence scores, and uncertainty preservation.
+- **Grounded Drafting:** Generates natural language draft responses and internal incident tickets (E011 for Ali Pratama) strictly constrained by verified numbers and attachment facts.
+- **Context Window:** Up to 1,048,576 tokens (1M tokens) with 64K output capacity.
 
 ---
 
-## 6. Known Weaknesses, Limitations & Future Improvements
-
-### Architecture Decision & Limitation: Migration to Gemini 3.8 Flash
-- **Context & Limitation:** The original specification referenced Anthropic Claude (Haiku 4.5 & Sonnet 5). Due to external credit balance constraints on third-party Anthropic accounts, the system was migrated to **Google Gemini 3.8 Flash** (`gemini-3.8-flash`) via the official `google-genai` SDK (`v2.14.0`).
-- **Benefits:** Unlocks a 1M token context window, native Pydantic JSON schema generation, faster latency, and eliminates third-party credit lockouts.
-- **Requirement:** Users running live processing must set `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) in `.env`.
+## 7. Known Weaknesses and Future Improvements
 
 ### Known Weaknesses
 1. **Live LLM Non-Determinism:** Even with `temperature=0.0`, live LLM responses can exhibit slight syntactic variations across runs. *(Mitigated in CI via the Two-Tier Testing Boundary and deterministic fixtures).*
-2. **Single-Process SQLite Locking:** SQLite in standard mode can encounter concurrency lock contention when background threads and web requests perform concurrent writes. *(Mitigated by enabling `WAL` mode and 30-second busy timeouts).*
-3. **Regex-Based Attachment Heuristics:** Inbound attachments are normalized as sanitized text. Unstructured PDF/image utility bills currently rely on upstream OCR or plain text conversion.
+2. **Single-Process SQLite Locking:** SQLite in standard mode can encounter concurrency contention when background threads and web requests perform concurrent writes. *(Mitigated by enabling WAL mode and 30-second busy timeouts).*
+3. **Plain Text Attachment Normalization:** Inbound attachments are normalized as sanitized text. Unstructured PDF or image bills currently rely on upstream OCR or text extraction.
 
-### What We Would Improve With Another Day
-1. **Automated Feedback Learning Loop:** Capture human reviewer edits and rejections into an active evaluation dataset to automatically synthesize few-shot prompt exemplars.
-2. **Distributed Asynchronous Worker Queue:** Decouple inbound ingestion and LLM calls into background worker tasks using Redis/Celery or BullMQ with retry exponential backoff and dead-letter queues.
+### Future Roadmap
+1. **Automated Feedback Learning Loop:** Capture human reviewer edits and rejections into an active evaluation dataset to continuously refine few-shot exemplars.
+2. **Distributed Asynchronous Worker Queue:** Decouple inbound ingestion and LLM calls into background worker tasks using Redis/Celery or BullMQ with exponential backoff and dead-letter queues.
 3. **Live Webhook Integrations:** Connect the approved dispatch gate to real external channels (SendGrid/Mailgun for email, and HubSpot/Salesforce bi-directional REST APIs).
 
 ---
 
-## 7. Short Screen Recording Guide (Evaluator Walkthrough)
+## 8. Evaluator Demonstration Walkthrough
 
-When recording a 2–3 minute demonstration of the system:
+When recording a 2 to 3 minute demonstration of the system:
 1. **CLI Demonstration (30s):**
    - Run `python main.py reset` to show defensive seeding (realigning C002 missing phone).
-   - Run `python main.py process --all` to show batch execution, category assignment, and uncertainty flags (e.g. E006 zero-candidate, E008 multi-candidate).
+   - Run `python main.py process --all --fixtures` to show batch execution, category assignment, and uncertainty flags (E006 zero-candidate, E008 multi-candidate).
 2. **Web Dashboard Overview (30s):**
    - Open `http://127.0.0.1:8000`. Highlight top KPI metrics (Pending Review, Dispatched, Quarantined, Duplicate Reviews).
-   - Filter table by `Pending` and `Quarantined`.
-3. **Attachment Inspection & Grounded Drafting (45s):**
-   - Click **Inspect & Review** on **E001**. Show the attached Truganina energy bill viewer side-by-side with the drafted reply quoting 68,420 kWh and $18,940.
-   - Click **Approve & Dispatch**. Show status transitioning to `APPROVED_DISPATCHED`.
+   - Filter table by `Needs Review` and `Unprocessed`.
+   - Demonstrate the two-stage controls: `1. Classify All` and `2. Draft Responses`.
+3. **Attachment Inspection and Grounded Drafting (45s):**
+   - Click **Inspect & Dispatch** on **E001**. Show the attached Truganina energy bill viewer side-by-side with the drafted reply quoting 68,420 kWh and $18,940.
+   - Click **Approve & Dispatch Response**. Show status transitioning to `APPROVED_DISPATCHED`.
    - Inspect **E011**. Show the Internal Incident Ticket directed to Ali Pratama (OAuth expiration + 146 records).
-4. **3-Level Entity Resolution (45s):**
-   - Scroll to the **Entity Resolution Queue**.
-   - Show Level 1 (C001 vs C002): Click **Merge as Duplicate**.
-   - Show Level 2 (E002 on C002): Click **Update CRM Field** to apply unverified phone `0400 111 020`.
-   - Show Level 3 (E010 on E009): Show Harbour Cold Stores contact correction (Sam's updated phone and email).
+4. **Duplicate Review and CRM Directory (45s):**
+   - Switch to **Duplicate & Contact Review**.
+   - Review the Decision Guidelines explaining `Merge Records` vs `Update CRM Record` vs `Keep Separate`.
+   - Open **Compare Details** on Level 1 (C001 vs C002) and click **Merge Records**.
+   - Switch to **CRM Directory**. Show real-time search, filter chips, and open a profile modal inspecting company details and linked enquiry history.

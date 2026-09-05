@@ -477,7 +477,7 @@ def api_classify_all():
     if not api_key:
         raise HTTPException(
             status_code=400,
-            detail="GEMINI_API_KEY belum ditemukan di file .env! Silakan set GEMINI_API_KEY terlebih dahulu."
+            detail="GEMINI_API_KEY was not found in .env. Configure GEMINI_API_KEY before continuing."
         )
     conn = get_db_connection(DATABASE_PATH)
     cursor = conn.cursor()
@@ -510,7 +510,7 @@ def api_draft_all():
     if not api_key:
         raise HTTPException(
             status_code=400,
-            detail="GEMINI_API_KEY belum ditemukan di file .env! Silakan set GEMINI_API_KEY terlebih dahulu."
+            detail="GEMINI_API_KEY was not found in .env. Configure GEMINI_API_KEY before continuing."
         )
     conn = get_db_connection(DATABASE_PATH)
     cursor = conn.cursor()
@@ -546,7 +546,7 @@ def api_classify_single(enquiry_id: str):
     if not api_key:
         raise HTTPException(
             status_code=400,
-            detail="GEMINI_API_KEY belum ditemukan di file .env! Silakan set GEMINI_API_KEY terlebih dahulu."
+            detail="GEMINI_API_KEY was not found in .env. Configure GEMINI_API_KEY before continuing."
         )
     try:
         res = classify_enquiry(enquiry_id, db_path=DATABASE_PATH, use_fixtures=False)
@@ -571,12 +571,12 @@ def api_draft_single(enquiry_id: str):
     if not api_key:
         raise HTTPException(
             status_code=400,
-            detail="GEMINI_API_KEY belum ditemukan di file .env! Silakan set GEMINI_API_KEY terlebih dahulu."
+            detail="GEMINI_API_KEY was not found in .env. Configure GEMINI_API_KEY before continuing."
         )
     try:
         draft = draft_response_for_enquiry(enquiry_id, db_path=DATABASE_PATH, use_fixtures=False)
         if not draft:
-            raise HTTPException(status_code=400, detail=f"Draft tidak dapat disusun (enquiry {enquiry_id} berstatus junk/quarantined atau terjadi error).")
+            raise HTTPException(status_code=400, detail=f"Unable to generate response draft: enquiry {enquiry_id} is quarantined as junk or an error occurred.")
         return {"status": "ok", "enquiry_id": enquiry_id, "draft": draft}
     except HTTPException:
         raise
@@ -593,7 +593,7 @@ def api_process_all():
     if not api_key:
         raise HTTPException(
             status_code=400,
-            detail="GEMINI_API_KEY belum ditemukan di file .env! Silakan masukkan key Anda (GEMINI_API_KEY=AIzaSy...) ke file .env terlebih dahulu."
+            detail="GEMINI_API_KEY was not found in .env. Configure GEMINI_API_KEY before continuing."
         )
     try:
         res = process_all_enquiries(db_path=DATABASE_PATH, use_fixtures=False)
@@ -601,7 +601,7 @@ def api_process_all():
         if errors:
             raise HTTPException(
                 status_code=400,
-                detail=f"Proses AI terhenti: {errors[0]}"
+                detail=f"Processing stopped: {errors[0]}"
             )
         return {"status": "ok", "processed": res["total_processed"], "results": res["results"]}
     except HTTPException:
@@ -619,7 +619,7 @@ def api_process_single(enquiry_id: str):
     if not api_key:
         raise HTTPException(
             status_code=400,
-            detail="GEMINI_API_KEY belum ditemukan di file .env! Silakan masukkan key Anda (GEMINI_API_KEY=AIzaSy...) ke file .env terlebih dahulu."
+            detail="GEMINI_API_KEY was not found in .env. Configure GEMINI_API_KEY before continuing."
         )
     try:
         res = process_enquiry(enquiry_id, db_path=DATABASE_PATH, use_fixtures=False)
