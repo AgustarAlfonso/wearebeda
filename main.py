@@ -38,10 +38,19 @@ def cmd_seed(args):
 
 def cmd_process(args):
     """Processes enquiries through the multi-stage pipeline."""
-    is_live = args.live and bool(ANTHROPIC_API_KEY)
-    use_fixtures = not is_live
+    use_fixtures = getattr(args, "fixtures", False)
 
-    mode_label = "LIVE LLM (Claude Haiku 4.5 & Sonnet 5)" if is_live else "DETERMINISTIC FIXTURES"
+    if not use_fixtures and not ANTHROPIC_API_KEY:
+        print("\n" + "!" * 65)
+        print(" [ERROR] ANTHROPIC_API_KEY TIDAK DITEMUKAN!")
+        print(" Sistem BEDA berjalan dalam mode PURE LIVE LLM ONLY.")
+        print(" Sesuai spesifikasi, sistem tidak melakukan fallback offline otomatis.")
+        print("\n Silakan buat file .env di root folder dengan isi:")
+        print("   ANTHROPIC_API_KEY=sk-ant-api03-xxxx...")
+        print("!" * 65 + "\n")
+        sys.exit(1)
+
+    mode_label = "PURE LIVE LLM (Claude Haiku 4.5 & Sonnet 5)" if not use_fixtures else "DETERMINISTIC TEST FIXTURES"
     print("\n" + "=" * 65)
     print(" BEDA Automated Business Enquiry Handling Pipeline")
     print(f" Execution Mode: {mode_label}")
@@ -106,8 +115,7 @@ def main():
     # Command: process
     p_proc = subparsers.add_parser("process", help="Process inbound enquiries")
     p_proc.add_argument("-a", "--all", action="store_true", help="Process all 12 enquiries")
-    p_proc.add_argument("--id", type=str, help="Process single enquiry by ID (e.g. E001)")
-    p_proc.add_argument("--live", action="store_true", help="Use live Claude API instead of fixtures")
+    p_proc.add_argument("--fixtures", action="store_true", help="Use deterministic test fixtures (offline test mode)")
     p_proc.set_defaults(func=cmd_process)
 
     # Command: serve

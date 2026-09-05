@@ -133,28 +133,33 @@ def classify_enquiry(
     # 4. Classification & Extraction
     result: Dict[str, Any]
 
-    # Use deterministic fixture if requested or if live API key is absent
-    if use_fixtures or not ANTHROPIC_API_KEY:
+    if use_fixtures:
         if enquiry_id in FIXTURES_CLASSIFY:
             result = FIXTURES_CLASSIFY[enquiry_id]
         else:
-            # Fallback generic structured classification
+            # Fallback generic structured classification for unknown test IDs
             result = {
                 "category": "insufficient_info",
                 "confidence": 0.5,
                 "assigned_owner": ["Matt Cooper"],
-                "needs_confirmation": True,
+                "needs_confirmation": False,
                 "extracted_fields": {
                     "sender_name": enquiry["sender_name"],
                     "sender_email": enquiry["sender_email"],
                     "company_name": None,
                     "phone": None,
-                    "request_summary": clean_text[:120],
+                    "request_summary": enquiry["subject"] or "",
                     "missing_fields": []
                 },
-                "reasoning": "Fallback structured classification."
+                "reasoning": "Generic test fixture."
             }
     else:
+        if not ANTHROPIC_API_KEY:
+            raise ValueError(
+                "ANTHROPIC_API_KEY tidak ditemukan di environment/.env! "
+                "Runtime sistem dikonfigurasi sebagai Pure Live LLM. "
+                "Silakan set ANTHROPIC_API_KEY di file .env untuk memproses enquiry secara live."
+            )
         # Pure Live LLM Call (Haiku)
         client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
         user_message = f"Sender: {enquiry['sender_name']} <{enquiry['sender_email']}>\nSubject: {enquiry['subject']}\nChannel: {enquiry['channel']}\n\nEnquiry Context:\n{clean_text}"

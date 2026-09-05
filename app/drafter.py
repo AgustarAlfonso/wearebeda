@@ -64,12 +64,18 @@ def draft_response_for_enquiry(
 
     draft_text: Optional[str] = None
 
-    if use_fixtures or not ANTHROPIC_API_KEY:
+    if use_fixtures:
         if enquiry_id in FIXTURES_DRAFT:
             draft_text = FIXTURES_DRAFT[enquiry_id]
         else:
             draft_text = f"Dear {enquiry['sender_name'] or 'Customer'},\n\nThank you for reaching out regarding {enquiry['subject']}. We are reviewing your request and will follow up shortly.\n\nBest regards,\nBEDA Team"
     else:
+        if not ANTHROPIC_API_KEY:
+            raise ValueError(
+                "ANTHROPIC_API_KEY tidak ditemukan di environment/.env! "
+                "Runtime sistem dikonfigurasi sebagai Pure Live LLM. "
+                "Silakan set ANTHROPIC_API_KEY di file .env untuk memproses drafting secara live."
+            )
         # Live LLM call via Claude Sonnet 5
         client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
         clean_body = sanitise_text(enquiry["body"] or "")
