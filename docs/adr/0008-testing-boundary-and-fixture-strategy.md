@@ -1,0 +1,3 @@
+# Explicit Testing Boundary and Fixture Strategy for External LLM API
+
+We decided to maintain the primary test seam at the highest level (FastAPI HTTP endpoints and Service Orchestrator) while establishing an explicit boundary at the Anthropic API client for automated tests. For automated regression testing and CI, the Anthropic client is substituted by deterministic fixtures matching the 12 verified cases, preventing non-deterministic flakiness, token consumption, and rate-limit aborts during testing. Pure live LLM execution is preserved for production runtime and verified via an isolated, optional live smoke test suite (`pytest -m live_llm`), while live LLM non-determinism is documented as a known system weakness.

@@ -1,0 +1,3 @@
+# Three-Level Entity Matching and Actionable Deduplication Queue
+
+We decided that entity resolution must operate across three distinct scopes: CRM-internal pairwise matching at startup (detecting C001 vs C002), Enquiry-to-CRM matching (e.g. E001/E002 to C001/C002), and Enquiry-to-Enquiry linking for new prospects (e.g. E009 to E010 across company and domain). Furthermore, all Level 1 duplicates (C001/C002) must enter the same actionable human review queue with three explicit choices (`Merge as Duplicate`, `Update CRM Field`, `Keep Separate`), ensuring duplicate resolution is genuinely actionable rather than a passive status badge.

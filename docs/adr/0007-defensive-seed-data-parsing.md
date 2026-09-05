@@ -1,0 +1,3 @@
+# Defensive Parsing of Malformed Seed Data via Closed-Set Enums
+
+We decided to apply the untrusted-input constraint to seed data by validating CSV rows using closed-set enum membership (`type` and `status`) rather than fragile regex heuristics. When a malformed 8-column row is detected (e.g. C002 missing the phone column), fields are aligned defensively with `phone=None` and a warning is logged. Unverified claims in subsequent enquiries (e.g. E002 mentioning a phone number) are never auto-populated into trusted CRM records, but are surfaced as actionable review suggestions for human confirmation.
