@@ -74,7 +74,7 @@ def test_classification_records_audit_log(test_db_path):
     log = cursor.fetchone()
     assert log is not None
     assert log["status"] == "success"
-    assert log["model_used"] == "claude-haiku-4-5-20251001"
+    assert log["model_used"] in ["gemini-3.8-flash", "claude-haiku-4-5-20251001"]
     output = json.loads(log["output"])
     assert output["category"] == "sales_lead"
     conn.close()

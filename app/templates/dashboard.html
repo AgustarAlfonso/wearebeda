@@ -632,7 +632,7 @@
         <span>Pipeline Ready</span>
       </div>
       <button class="btn btn-primary" id="btnProcessAll" onclick="triggerProcessAll()">
-        ⚡ Process All with Live AI
+        ⚡ Process All with Gemini 3.8 Flash
       </button>
       <button class="btn btn-outline" onclick="location.reload()">Refresh</button>
     </div>
@@ -985,7 +985,7 @@
         if (data.category === 'internal_alert') {
           document.getElementById('draftSectionTitle').innerText = 'Internal Incident Ticket (Ali Pratama)';
         } else {
-          document.getElementById('draftSectionTitle').innerText = 'Grounded Response Draft (Claude Sonnet 5)';
+          document.getElementById('draftSectionTitle').innerText = 'Grounded Response Draft (Gemini 3.8 Flash)';
         }
 
         document.getElementById('reviewModal').classList.add('active');
@@ -1100,9 +1100,9 @@
     async function triggerProcessAll() {
       const btn = document.getElementById('btnProcessAll');
       const originalText = btn.innerHTML;
-      btn.innerHTML = '⏳ Processing with Claude Live...';
+      btn.innerHTML = '⏳ Processing with Gemini 3.8 Flash...';
       btn.disabled = true;
-      showToast("Memanggil Claude Haiku 4.5 & Sonnet 5 untuk memproses seluruh enquiry... Mohon tunggu sebentar.");
+      showToast("Memanggil Gemini 3.8 Flash untuk memproses seluruh enquiry... Mohon tunggu sebentar.");
 
       try {
         const res = await fetch('/api/process-all', { method: 'POST' });
@@ -1110,7 +1110,7 @@
         if (!res.ok) {
           throw new Error(data.detail || "Gagal memproses enquiry via AI");
         }
-        showToast(`Berhasil! ${data.processed} kasus telah diproses langsung oleh Claude.`);
+        showToast(`Berhasil! ${data.processed} kasus telah diproses langsung oleh Gemini 3.8 Flash.`);
         setTimeout(() => location.reload(), 1200);
       } catch (err) {
         showToast(err.message, true);
@@ -1120,14 +1120,14 @@
     }
 
     async function processSingleEnquiry(enquiryId) {
-      showToast(`Memproses ${enquiryId} via Claude API...`);
+      showToast(`Memproses ${enquiryId} via Gemini 3.8 Flash API...`);
       try {
         const res = await fetch(`/api/enquiries/${enquiryId}/process`, { method: 'POST' });
         const data = await res.json();
         if (!res.ok) {
           throw new Error(data.detail || "Gagal memproses enquiry");
         }
-        showToast(`Enquiry ${enquiryId} berhasil diproses langsung oleh Claude!`);
+        showToast(`Enquiry ${enquiryId} berhasil diproses langsung oleh Gemini 3.8 Flash!`);
         setTimeout(() => location.reload(), 1000);
       } catch (err) {
         showToast(err.message, true);

@@ -1,14 +1,34 @@
 import json
 import os
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
-import anthropic
+from typing import Optional, Dict, Any, List, Literal
+from pydantic import BaseModel, Field
+from google import genai
+from google.genai import types
+from google.genai.errors import APIError
 
-from app.config import ANTHROPIC_API_KEY, CLASSIFY_MODEL
+from app.config import GEMINI_API_KEY, GEMINI_MODEL, ANTHROPIC_API_KEY, CLASSIFY_MODEL
 from app.database import get_db_connection, log_audit
 from app.sanitiser import sanitise_text
 from app.dedup import check_exact_duplicate
 from app.fixtures import FIXTURES_CLASSIFY
+
+class ExtractedFields(BaseModel):
+    sender_name: Optional[str] = None
+    sender_email: Optional[str] = None
+    company_name: Optional[str] = None
+    phone: Optional[str] = None
+    request_summary: str
+    missing_fields: List[str] = Field(default_factory=list)
+
+class ClassificationResult(BaseModel):
+    category: Literal["sales_lead", "support", "internal_alert", "insufficient_info", "junk"]
+    confidence: float = Field(ge=0.0, le=1.0)
+    extracted_fields: ExtractedFields
+    assigned_owner: List[str] = Field(default_factory=list)
+    needs_confirmation: bool
+    reasoning: str
+
 
 CLASSIFY_TOOL = {
     "name": "classify_and_extract",
@@ -154,57 +174,44 @@ def classify_enquiry(
                 "reasoning": "Generic test fixture."
             }
     else:
-        live_key = os.getenv("ANTHROPIC_API_KEY", "") or ANTHROPIC_API_KEY
+        live_key = os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "") or GEMINI_API_KEY
         if not live_key:
             raise ValueError(
-                "ANTHROPIC_API_KEY tidak ditemukan di environment/.env! "
-                "Runtime sistem dikonfigurasi sebagai Pure Live LLM. "
-                "Silakan set ANTHROPIC_API_KEY di file .env untuk memproses enquiry secara live."
+                "GEMINI_API_KEY tidak ditemukan di environment/.env! "
+                "Runtime sistem dikonfigurasi sebagai Pure Live LLM (Gemini 3.8 Flash). "
+                "Silakan set GEMINI_API_KEY di file .env untuk memproses enquiry secara live."
             )
-        # Pure Live LLM Call (Haiku)
-        client = anthropic.Anthropic(api_key=live_key)
+        # Pure Live LLM Call (Gemini 3.8 Flash)
+        client = genai.Client(api_key=live_key)
         user_message = f"Sender: {enquiry['sender_name']} <{enquiry['sender_email']}>\nSubject: {enquiry['subject']}\nChannel: {enquiry['channel']}\n\nEnquiry Context:\n{clean_text}"
 
         try:
-            response = client.messages.create(
-                model=CLASSIFY_MODEL,
-                system=CLASSIFY_SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_message}],
-                tools=[CLASSIFY_TOOL],
-                tool_choice={"type": "tool", "name": "classify_and_extract"},
-                max_tokens=1000
+            config = types.GenerateContentConfig(
+                system_instruction=CLASSIFY_SYSTEM_PROMPT,
+                response_mime_type="application/json",
+                response_schema=ClassificationResult,
+                temperature=0.0
             )
+            response = client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=user_message,
+                config=config
+            )
+            if not response.text:
+                raise ValueError("Gemini model returned empty classification text.")
+            result = json.loads(response.text)
 
-            tool_input = None
-            for block in response.content:
-                if block.type == "tool_use" and block.name == "classify_and_extract":
-                    tool_input = block.input
-                    break
-
-            if not tool_input:
-                raise ValueError("Model failed to call classify_and_extract tool.")
-
-            result = tool_input
-
-        except anthropic.AuthenticationError as e:
-            err_msg = f"Proses AI gagal — API key Anthropic tidak valid: {str(e)}. Enquiry masuk antrean Needs Manual Review."
-            log_audit(enquiry_id, "classify", {"error": str(e)}, err_msg, "needs_review", CLASSIFY_MODEL, db_path, conn)
-            cursor.execute("UPDATE enquiries SET status = 'NEEDS_MANUAL_REVIEW', updated_at = datetime('now') WHERE id = ?", (enquiry_id,))
-            conn.commit()
-            conn.close()
-            return {"error": err_msg, "status": "NEEDS_MANUAL_REVIEW"}
-
-        except (anthropic.RateLimitError, anthropic.APIStatusError) as e:
-            err_msg = f"Proses AI gagal — limit kuota atau rate limit Anthropic tercapai: {str(e)}. Enquiry masuk antrean Needs Manual Review."
-            log_audit(enquiry_id, "classify", {"error": str(e)}, err_msg, "needs_review", CLASSIFY_MODEL, db_path, conn)
+        except APIError as e:
+            err_msg = f"Proses AI Gemini gagal — API/Quota error: {str(e)}. Enquiry masuk antrean Needs Manual Review."
+            log_audit(enquiry_id, "classify", {"error": str(e)}, err_msg, "needs_review", GEMINI_MODEL, db_path, conn)
             cursor.execute("UPDATE enquiries SET status = 'NEEDS_MANUAL_REVIEW', updated_at = datetime('now') WHERE id = ?", (enquiry_id,))
             conn.commit()
             conn.close()
             return {"error": err_msg, "status": "NEEDS_MANUAL_REVIEW"}
 
         except Exception as e:
-            err_msg = f"Proses AI gagal — kesalahan jaringan/runtime: {str(e)}. Enquiry masuk antrean Needs Manual Review."
-            log_audit(enquiry_id, "classify", {"error": str(e)}, err_msg, "needs_review", CLASSIFY_MODEL, db_path, conn)
+            err_msg = f"Proses AI Gemini gagal — kesalahan jaringan/runtime: {str(e)}. Enquiry masuk antrean Needs Manual Review."
+            log_audit(enquiry_id, "classify", {"error": str(e)}, err_msg, "needs_review", GEMINI_MODEL, db_path, conn)
             cursor.execute("UPDATE enquiries SET status = 'NEEDS_MANUAL_REVIEW', updated_at = datetime('now') WHERE id = ?", (enquiry_id,))
             conn.commit()
             conn.close()
@@ -244,7 +251,7 @@ def classify_enquiry(
         output=result,
         reasoning=result["reasoning"],
         status="success",
-        model_used=CLASSIFY_MODEL,
+        model_used=GEMINI_MODEL,
         db_path=db_path,
         conn=conn
     )

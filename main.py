@@ -9,7 +9,7 @@ import sys
 import argparse
 import uvicorn
 
-from app.config import DATABASE_PATH, DATA_PATH, ANTHROPIC_API_KEY
+from app.config import DATABASE_PATH, DATA_PATH, GEMINI_API_KEY, GEMINI_MODEL, ANTHROPIC_API_KEY
 from app.database import init_db, get_db_connection
 from app.seeder import seed_database_from_file
 from app.orchestrator import process_enquiry, process_all_enquiries
@@ -39,18 +39,19 @@ def cmd_seed(args):
 def cmd_process(args):
     """Processes enquiries through the multi-stage pipeline."""
     use_fixtures = getattr(args, "fixtures", False)
+    live_key = os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "") or GEMINI_API_KEY
 
-    if not use_fixtures and not ANTHROPIC_API_KEY:
+    if not use_fixtures and not live_key:
         print("\n" + "!" * 65)
-        print(" [ERROR] ANTHROPIC_API_KEY TIDAK DITEMUKAN!")
-        print(" Sistem BEDA berjalan dalam mode PURE LIVE LLM ONLY.")
+        print(" [ERROR] GEMINI_API_KEY TIDAK DITEMUKAN!")
+        print(f" Sistem BEDA berjalan dalam mode PURE LIVE LLM ONLY ({GEMINI_MODEL}).")
         print(" Sesuai spesifikasi, sistem tidak melakukan fallback offline otomatis.")
-        print("\n Silakan buat file .env di root folder dengan isi:")
-        print("   ANTHROPIC_API_KEY=sk-ant-api03-xxxx...")
+        print("\n Silakan isi file .env (di root folder atau folder app/) dengan:")
+        print("   GEMINI_API_KEY=AIzaSy...")
         print("!" * 65 + "\n")
         sys.exit(1)
 
-    mode_label = "PURE LIVE LLM (Claude Haiku 4.5 & Sonnet 5)" if not use_fixtures else "DETERMINISTIC TEST FIXTURES"
+    mode_label = f"PURE LIVE LLM (Google Gemini 3.8 Flash: {GEMINI_MODEL})" if not use_fixtures else "DETERMINISTIC TEST FIXTURES"
     print("\n" + "=" * 65)
     print(" BEDA Automated Business Enquiry Handling Pipeline")
     print(f" Execution Mode: {mode_label}")

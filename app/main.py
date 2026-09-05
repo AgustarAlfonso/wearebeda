@@ -347,11 +347,11 @@ def api_process_all():
     from app.config import BASE_DIR
     load_dotenv(BASE_DIR / ".env", override=True)
     load_dotenv(BASE_DIR / "app" / ".env", override=True)
-    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    api_key = os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "")
     if not api_key:
         raise HTTPException(
             status_code=400,
-            detail="ANTHROPIC_API_KEY belum ditemukan di file .env! Silakan masukkan key Anda ke file .env di folder proyek terlebih dahulu."
+            detail="GEMINI_API_KEY belum ditemukan di file .env! Silakan masukkan key Anda (GEMINI_API_KEY=AIzaSy...) ke file .env terlebih dahulu."
         )
     try:
         res = process_all_enquiries(db_path=DATABASE_PATH, use_fixtures=False)
@@ -373,11 +373,11 @@ def api_process_single(enquiry_id: str):
     from app.config import BASE_DIR
     load_dotenv(BASE_DIR / ".env", override=True)
     load_dotenv(BASE_DIR / "app" / ".env", override=True)
-    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    api_key = os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "")
     if not api_key:
         raise HTTPException(
             status_code=400,
-            detail="ANTHROPIC_API_KEY belum ditemukan di file .env! Silakan masukkan key Anda ke file .env di folder proyek terlebih dahulu."
+            detail="GEMINI_API_KEY belum ditemukan di file .env! Silakan masukkan key Anda (GEMINI_API_KEY=AIzaSy...) ke file .env terlebih dahulu."
         )
     try:
         res = process_enquiry(enquiry_id, db_path=DATABASE_PATH, use_fixtures=False)

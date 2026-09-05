@@ -77,24 +77,22 @@ pip install -r requirements.txt
 ```
 
 ### 2. Environment Configuration (Optional)
-Create a `.env` file in the root directory if you wish to run live LLM calls:
+Create a `.env` file in the root directory (or inside `app/.env`) if you wish to run live LLM calls:
 ```env
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
+GEMINI_API_KEY=your_google_gemini_api_key_here
 ```
-> *Note: By default, the automated test suite and standard CLI runner use fast, deterministic fixtures (`app/fixtures.py`) that run offline with zero token cost, zero rate limits, and zero non-determinism.*
+> *Note: By default, the automated test suite and standard CLI runner support fast, deterministic fixtures (`app/fixtures.py`) that run offline with zero token cost, zero rate limits, and zero non-determinism via the `--fixtures` flag.*
 
 ### 3. Initialize & Process via CLI
 ```bash
 # Reset database cleanly and defensively seed from data/data.md
 python main.py reset
 
-# Process all 12 cases in batch
+# Process all 12 cases in batch with Live Gemini 3.8 Flash (requires GEMINI_API_KEY)
 python main.py process --all
-```
 
-To run using live Claude API calls (requires `ANTHROPIC_API_KEY`):
-```bash
-python main.py process --all --live
+# Or run with deterministic test fixtures (offline / CI mode)
+python main.py process --all --fixtures
 ```
 
 ### 4. Start the Interactive Web Dashboard
@@ -115,10 +113,10 @@ The repository contains 36 comprehensive automated tests covering the entire pip
 ```bash
 pytest
 ```
-*Expected Output:* **35 passed, 1 skipped in ~15s** (1 skipped is the isolated live smoke test when live API keys are not supplied in CI).
+*Expected Output:* **35 passed, 1 skipped in ~17s** (1 skipped is the isolated live smoke test when live API keys are not supplied in CI).
 
 ### Running the Isolated Live Smoke Test
-To test live handshake connectivity against Anthropic's endpoints:
+To test live handshake connectivity against Google Gemini 3.8 Flash endpoints:
 ```bash
 pytest -m live_llm
 ```
@@ -127,16 +125,21 @@ pytest -m live_llm
 
 ## 5. AI Models & Tools Used
 
-1. **Claude Haiku 4.5 (`claude-haiku-4-5-20251001`)**:
-   - **Role:** High-speed, cost-efficient classification and structured entity extraction.
-   - **Schema Enforcement:** Uses Anthropic Tool Calling API (`classify_and_extract`) to guarantee strict output typing, confidence scores, and uncertainty preservation.
-2. **Claude Sonnet 5 (`claude-sonnet-5`)**:
-   - **Role:** Grounded natural-language drafting.
-   - **Grounding Constraints:** System prompt strictly forbids hallucinating unprovided tariffs or pricing; quotes verified numbers directly from attachments (e.g. 68,420 kWh for E001, $2,640 variance for E003); and formats internal incident tickets quoting technical failure facts for E011.
+1. **Google Gemini 3.8 Flash (`gemini-3.8-flash`)**:
+   - **Role:** High-speed, cost-efficient classification, structured entity extraction, and grounded drafting.
+   - **Release Date:** September 2, 2026 (Latest state-of-the-art iteration in the Gemini 3 family).
+   - **Schema Enforcement:** Employs the official `google-genai` Python SDK (`GenerateContentConfig`) with `response_mime_type="application/json"` and Pydantic `response_schema` to guarantee strict output typing, confidence scores, and uncertainty preservation.
+   - **Grounded Drafting:** Generates natural language draft responses and internal incident tickets (E011 for Ali Pratama) strictly constrained by verified numbers and attachment facts.
+   - **Context Window:** Up to 1,048,576 tokens (1M tokens) with 64K output capacity.
 
 ---
 
-## 6. Known Weaknesses & Future Improvements
+## 6. Known Weaknesses, Limitations & Future Improvements
+
+### Architecture Decision & Limitation: Migration to Gemini 3.8 Flash
+- **Context & Limitation:** The original specification referenced Anthropic Claude (Haiku 4.5 & Sonnet 5). Due to external credit balance constraints on third-party Anthropic accounts, the system was migrated to **Google Gemini 3.8 Flash** (`gemini-3.8-flash`) via the official `google-genai` SDK (`v2.14.0`).
+- **Benefits:** Unlocks a 1M token context window, native Pydantic JSON schema generation, faster latency, and eliminates third-party credit lockouts.
+- **Requirement:** Users running live processing must set `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) in `.env`.
 
 ### Known Weaknesses
 1. **Live LLM Non-Determinism:** Even with `temperature=0.0`, live LLM responses can exhibit slight syntactic variations across runs. *(Mitigated in CI via the Two-Tier Testing Boundary and deterministic fixtures).*

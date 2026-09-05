@@ -1,9 +1,11 @@
 import os
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
-import anthropic
+from google import genai
+from google.genai import types
+from google.genai.errors import APIError
 
-from app.config import ANTHROPIC_API_KEY, DRAFT_MODEL
+from app.config import GEMINI_API_KEY, GEMINI_MODEL, ANTHROPIC_API_KEY, DRAFT_MODEL
 from app.database import get_db_connection, log_audit
 from app.sanitiser import sanitise_text
 from app.fixtures import FIXTURES_DRAFT
@@ -70,15 +72,15 @@ def draft_response_for_enquiry(
         else:
             draft_text = f"Dear {enquiry['sender_name'] or 'Customer'},\n\nThank you for reaching out regarding {enquiry['subject']}. We are reviewing your request and will follow up shortly.\n\nBest regards,\nBEDA Team"
     else:
-        live_key = os.getenv("ANTHROPIC_API_KEY", "") or ANTHROPIC_API_KEY
+        live_key = os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "") or GEMINI_API_KEY
         if not live_key:
             raise ValueError(
-                "ANTHROPIC_API_KEY tidak ditemukan di environment/.env! "
-                "Runtime sistem dikonfigurasi sebagai Pure Live LLM. "
-                "Silakan set ANTHROPIC_API_KEY di file .env untuk memproses drafting secara live."
+                "GEMINI_API_KEY tidak ditemukan di environment/.env! "
+                "Runtime sistem dikonfigurasi sebagai Pure Live LLM (Gemini 3.8 Flash). "
+                "Silakan set GEMINI_API_KEY di file .env untuk memproses drafting secara live."
             )
-        # Live LLM call via Claude Sonnet 5
-        client = anthropic.Anthropic(api_key=live_key)
+        # Live LLM call via Gemini 3.8 Flash
+        client = genai.Client(api_key=live_key)
         clean_body = sanitise_text(enquiry["body"] or "")
 
         user_prompt = f"""Category: {category}
@@ -93,23 +95,27 @@ Body:\n{clean_body}
 Draft the response now according to system rules."""
 
         try:
-            response = client.messages.create(
-                model=DRAFT_MODEL,
-                system=DRAFT_SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_prompt}],
-                max_tokens=1500
+            config = types.GenerateContentConfig(
+                system_instruction=DRAFT_SYSTEM_PROMPT,
+                max_output_tokens=1500,
+                temperature=0.2
             )
-            draft_text = response.content[0].text.strip()
+            response = client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=user_prompt,
+                config=config
+            )
+            draft_text = response.text.strip() if response.text else ""
 
         except Exception as e:
-            err_msg = f"Gagal menyusun draf respon via Sonnet: {str(e)}"
+            err_msg = f"Gagal menyusun draf respon via Gemini: {str(e)}"
             log_audit(
                 input_id=enquiry_id,
                 step="draft_response",
                 output={"error": str(e)},
                 reasoning=err_msg,
                 status="needs_review",
-                model_used=DRAFT_MODEL,
+                model_used=GEMINI_MODEL,
                 db_path=db_path,
                 conn=conn
             )
@@ -134,7 +140,7 @@ Draft the response now according to system rules."""
         output={"draft": draft_text},
         reasoning="Grounded draft response generated and queued for human approval.",
         status="success",
-        model_used=DRAFT_MODEL,
+        model_used=GEMINI_MODEL,
         db_path=db_path,
         conn=conn
     )
