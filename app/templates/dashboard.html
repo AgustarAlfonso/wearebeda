@@ -1262,6 +1262,42 @@
         </div>
       </div>
 
+      <!-- Action Guide Callout Box -->
+      <div style="background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: var(--radius-md); padding: 1.1rem 1.35rem; margin-bottom: 1.5rem;">
+        <div style="font-weight: 600; font-size: 0.9rem; color: var(--accent-cyan); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+          <span>💡 Panduan Perbedaan Tindakan Reviewer:</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; font-size: 0.83rem; line-height: 1.5;">
+          <div style="background: rgba(30, 41, 59, 0.7); padding: 12px 14px; border-radius: var(--radius-sm); border-left: 3px solid var(--accent-cyan);">
+            <div style="font-weight: 600; color: var(--text-main); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+              <span>🔗 Gabungkan Data (Merge)</span>
+            </div>
+            <div style="color: var(--text-muted);">
+              <strong>Kapan dipakai:</strong> Jika kedua entitas/kasus adalah <em>pihak yang sama persis</em>.<br>
+              <strong>Efek:</strong> Data target disatukan ke entitas utama, dan record ganda dinonaktifkan (status <code>MERGED</code>) agar tidak ditangani dua kali.
+            </div>
+          </div>
+          <div style="background: rgba(30, 41, 59, 0.7); padding: 12px 14px; border-radius: var(--radius-sm); border-left: 3px solid var(--accent-emerald);">
+            <div style="font-weight: 600; color: var(--text-main); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+              <span>✏️ Update Kontak CRM (Update Field)</span>
+            </div>
+            <div style="color: var(--text-muted);">
+              <strong>Kapan dipakai:</strong> Jika profil CRM sudah ada, tetapi pesan membawa <em>nomor telepon atau email baru</em>.<br>
+              <strong>Efek:</strong> Memperbarui nomor telepon/email di data master CRM tanpa menghapus/menonaktifkan entitas tersebut.
+            </div>
+          </div>
+          <div style="background: rgba(30, 41, 59, 0.7); padding: 12px 14px; border-radius: var(--radius-sm); border-left: 3px solid var(--text-dim);">
+            <div style="font-weight: 600; color: var(--text-main); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+              <span>✂️ Tetap Pisahkan (Keep Separate)</span>
+            </div>
+            <div style="color: var(--text-muted);">
+              <strong>Kapan dipakai:</strong> Jika dugaan kecocokan AI keliru dan kedua pihak memang <em>dua entitas berbeda</em>.<br>
+              <strong>Efek:</strong> Menolak penggabungan dan membiarkan kedua record tetap aktif secara independen.
+            </div>
+          </div>
+        </div>
+      </div>
+
       {% if duplicate_reviews|length == 0 %}
         <div class="info-card" style="margin-bottom: 2rem; text-align: center; color: var(--text-dim); padding: 3rem;">
           <div style="font-size: 2.2rem; margin-bottom: 8px;">🎉</div>
@@ -2586,6 +2622,17 @@
           claimHtml = `<div style="margin-top: 8px; font-size: 0.84rem; color: var(--accent-amber);"><strong>Catatan:</strong> ${escapeHtml(data.unverified_claim)}</div>`;
         }
 
+        let actionGuideHtml = '';
+        if (data.status === 'PENDING') {
+          actionGuideHtml = `
+            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255, 255, 255, 0.15); font-size: 0.8rem; color: var(--text-dim); display: flex; flex-direction: column; gap: 4px;">
+              <div><strong style="color: var(--accent-cyan);">🔗 Gabungkan Data:</strong> Satukan entitas & nonaktifkan record ganda karena merupakan pihak yang sama persis.</div>
+              ${data.unverified_claim ? '<div><strong style="color: var(--accent-emerald);">✏️ Update Kontak CRM:</strong> Perbarui nomor telepon/email pada master profil CRM dengan info baru tanpa menghapus record.</div>' : ''}
+              <div><strong style="color: var(--text-muted);">✂️ Tetap Pisahkan:</strong> Tolak rekomendasi AI dan biarkan kedua pihak tetap berdiri sendiri sebagai record terpisah.</div>
+            </div>
+          `;
+        }
+
         analysisBox.innerHTML = `
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <span style="font-size: 0.88rem; font-weight: 600; color: var(--text-main);">🤖 Kesimpulan Deteksi AI (${escapeHtml(data.match_level)})</span>
@@ -2593,6 +2640,7 @@
           </div>
           <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">${escapeHtml(data.description)}</div>
           ${claimHtml}
+          ${actionGuideHtml}
         `;
 
         // Render Action Buttons
